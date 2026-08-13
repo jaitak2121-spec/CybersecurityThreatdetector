@@ -1,4 +1,4 @@
-'''mermaid
+```mermaid
 graph LR
     subgraph Cybersecurity Management & Threat Monitoring System
         %% Use Cases
@@ -38,4 +38,4 @@ graph LR
     US --> UC9
     
     TI --> UC4
-    '''
+    ```
