@@ -1,1 +1,42 @@
+flowchart LR
 
+    SA["Security Analyst"]
+    ADMIN["System Administrator"]
+    EG["Event Generator"]
+    SMS["Scheduled Monitoring Service"]
+    NS["Notification Service"]
+
+    subgraph SYSTEM["Cybersecurity Threat Detection & Incident Response Simulator"]
+
+        UC1(("Generate Security Events"))
+        UC2(("Monitor Security Events"))
+        UC3(("Detect Threats"))
+        UC4(("Assess Threat Risk"))
+        UC5(("Investigate Incident"))
+        UC6(("Respond to Incident"))
+        UC7(("Generate Security Alert"))
+        UC8(("View Security Logs"))
+        UC9(("Generate Security Report"))
+        UC10(("Configure Detection Rules"))
+
+        UC2 -. "<<include>>" .-> UC3
+        UC3 -. "<<include>>" .-> UC4
+        UC6 -. "<<include>>" .-> UC7
+
+        UC5 -. "<<extend>> [risk >= HIGH]" .-> UC3
+
+    end
+
+    SA --- UC2
+    SA --- UC3
+    SA --- UC5
+    SA --- UC6
+    SA --- UC8
+    SA --- UC9
+
+    ADMIN --- UC10
+    ADMIN --- UC8
+
+    EG --- UC1
+    SMS --- UC2
+    NS --- UC7
