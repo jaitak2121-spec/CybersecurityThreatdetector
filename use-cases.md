@@ -155,7 +155,7 @@ The Security Analyst decides that a response action is required for an active se
 
 ### Alternate Flow 1 — Compromised Device
 
-1. System identifies that the affected device is compromised.
+1. System identifies that a particular affected device is compromised.
 2. Security Analyst selects "Isolate Device".
 3. System asks the Security Analyst for confirmation.
 4. Security Analyst confirms the action.
