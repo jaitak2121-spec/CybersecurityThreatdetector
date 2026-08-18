@@ -2,7 +2,7 @@
 
 ## Overview
 
-The following CRC (Class–Responsibility–Collaborator) cards are derived from the **survivor classes identified during noun analysis** of the Cybersecurity Threat Detector system.
+The following CRC (Class–Responsibility–Collaborator) cards are derived from the survivor classes identified during noun analysis of the Cybersecurity Threat Detector system.
 
 Each CRC card identifies:
 
@@ -14,9 +14,7 @@ Each CRC card identifies:
 
 # 1. SecurityEvent
 
-### Class
-
-**SecurityEvent**
+ **Class**: SecurityEvent
 
 ### Responsibilities
 
@@ -40,9 +38,7 @@ Each CRC card identifies:
 
 # 2. Threat
 
-### Class
-
-**Threat**
+**Class**: Threat
 
 ### Responsibilities
 
@@ -67,9 +63,7 @@ Each CRC card identifies:
 
 # 3. DetectionRule
 
-### Class
-
-**DetectionRule**
+**Class**: DetectionRule
 
 ### Responsibilities
 
@@ -92,9 +86,7 @@ Each CRC card identifies:
 
 # 4. Alert
 
-### Class
-
-**Alert**
+**Class**: Alert
 
 ### Responsibilities
 
@@ -119,9 +111,7 @@ Each CRC card identifies:
 
 # 5. Incident
 
-### Class
-
-**Incident**
+**Class**: Incident
 
 ### Responsibilities
 
@@ -147,9 +137,7 @@ Each CRC card identifies:
 
 # 6. Evidence
 
-### Class
-
-**Evidence**
+**Class**: Evidence
 
 ### Responsibilities
 
@@ -173,9 +161,7 @@ Each CRC card identifies:
 
 # 7. ResponseAction
 
-### Class
-
-**ResponseAction**
+**Class**: ResponseAction
 
 ### Responsibilities
 
@@ -199,9 +185,7 @@ Each CRC card identifies:
 
 # 8. Device
 
-### Class
-
-**Device**
+**Class**: Device
 
 ### Responsibilities
 
@@ -226,9 +210,7 @@ Each CRC card identifies:
 
 # 9. SecurityLog
 
-### Class
-
-**SecurityLog**
+**Class**: SecurityLog
 
 ### Responsibilities
 
@@ -255,9 +237,7 @@ Each CRC card identifies:
 
 # 10. SecurityReport
 
-### Class
-
-**SecurityReport**
+**Class**: SecurityReport
 
 ### Responsibilities
 
@@ -292,7 +272,7 @@ Each CRC card identifies:
 | **DetectionRule**  | Detects suspicious activity                 | SecurityEvent, Threat, Alert, SecurityLog                                             |
 | **Alert**          | Warns about suspicious activity             | DetectionRule, SecurityEvent, Threat, Incident                                        |
 | **Incident**       | Manages a security issue                    | Alert, Threat, SecurityEvent, Evidence, Device, ResponseAction                        |
-| **Evidence**       | Supports investigation                      | Incident, Threat, SecurityEvent, SecurityLog, Device                                  |
+| **Evidence**       | Supports the investigation                      | Incident, Threat, SecurityEvent, SecurityLog, Device                                  |
 | **ResponseAction** | Handles incident response                   | Incident, Threat, Device, SecurityLog                                                 |
 | **Device**         | Represents affected system/device           | SecurityEvent, Threat, Incident, Evidence, ResponseAction, SecurityLog                |
 | **SecurityLog**    | Records security activity                   | SecurityEvent, DetectionRule, Alert, Incident, ResponseAction, Device                 |
