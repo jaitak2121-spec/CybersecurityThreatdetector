@@ -1,0 +1,149 @@
+@startuml class-diagram
+skinparam classAttributeIconSize true
+skinparam style strictuml
+hide empty members
+
+title Domain Class Diagram - Cybersecurity Threat Detection & Incident Response Simulator
+
+class Device {
+  - deviceId: String
+  - deviceName: String
+  - ipAddress: String
+  - osType: String
+  - status: String
+  + getDeviceId(): String
+  + getIpAddress(): String
+  + updateStatus(newStatus: String): void
+  + isolate(): void
+}
+
+class SecurityEvent {
+  - eventId: String
+  - eventType: String
+  - timestamp: DateTime
+  - sourceIp: String
+  - rawData: String
+  - severity: String
+  - status: String
+  + getEventDetails(): String
+  + markProcessed(): void
+}
+
+class DetectionRule {
+  - ruleId: String
+  - ruleName: String
+  - conditionPattern: String
+  - severityThreshold: String
+  - isEnabled: Boolean
+  + evaluateEvent(event: SecurityEvent): Boolean
+  + triggerAlert(event: SecurityEvent): Alert
+}
+
+class Threat {
+  - threatId: String
+  - threatType: String
+  - severity: String
+  - source: String
+  - status: String
+  + classifyRisk(): String
+  + updateStatus(status: String): void
+}
+
+class Alert {
+  - alertId: String
+  - timestamp: DateTime
+  - severity: String
+  - status: String
+  - description: String
+  + getAlertDetails(): String
+  + escalateToIncident(): Incident
+  + updateStatus(newStatus: String): void
+  + markFalsePositive(reason: String): void
+}
+
+class Incident {
+  - incidentId: String
+  - title: String
+  - severity: String
+  - status: String
+  - createdAt: DateTime
+  - description: String
+  + addAlert(alert: Alert): void
+  + addEvidence(evidence: Evidence): void
+  + executeResponse(action: ResponseAction): void
+  + updateStatus(newStatus: String): void
+}
+
+class Evidence {
+  - evidenceId: String
+  - evidenceType: String
+  - source: String
+  - timestamp: DateTime
+  - description: String
+  - payloadData: String
+  + getEvidenceDetails(): String
+  + verifyIntegrity(): Boolean
+}
+
+class ResponseAction {
+  - actionId: String
+  - actionType: String
+  - status: String
+  - executedAt: DateTime
+  - outcome: String
+  + execute(targetDevice: Device): Boolean
+  + recordOutcome(result: String): void
+}
+
+class SecurityLog {
+  - logId: String
+  - timestamp: DateTime
+  - eventType: String
+  - message: String
+  - sourceComponent: String
+  + writeLogEntry(source: String, message: String): void
+  + queryLogs(filter: String): List<SecurityLog>
+}
+
+class SecurityReport {
+  - reportId: String
+  - generatedAt: DateTime
+  - periodCovered: String
+  - summary: String
+  - threatLevelDistribution: Map<String, Integer>
+  + generateSummary(): void
+  + exportReport(format: String): File
+}
+
+' --- Associations and Multiplicities ---
+
+Device "1" -- "0..*" SecurityEvent : generates >
+Device "0..*" -- "0..*" Incident : involved in >
+Device "1" <-- "0..*" ResponseAction : targets <
+
+DetectionRule "1..*" ..> "1" SecurityEvent : evaluates >
+DetectionRule "1" ..> "0..*" Alert : generates >
+
+SecurityEvent "1..*" -- "0..1" Threat : indicates >
+SecurityEvent "1" -- "0..1" Alert : triggers >
+SecurityEvent "0..*" -- "0..1" Incident : associated with >
+
+Threat "1" -- "0..*" Alert : identified by <
+Threat "0..1" -- "0..*" Incident : associated with <
+
+Alert "1..*" -- "0..1" Incident : escalates to >
+
+Incident "1" *-- "0..*" Evidence : contains >
+Incident "1" o-- "0..*" ResponseAction : executes >
+
+' System-wide Logging and Reporting Dependencies
+SecurityLog <.. SecurityEvent : logs
+SecurityLog <.. Alert : logs
+SecurityLog <.. Incident : logs
+SecurityLog <.. ResponseAction : logs
+
+SecurityReport ..> Incident : summarizes >
+SecurityReport ..> Threat : summarizes >
+SecurityReport ..> Alert : summarizes >
+
+@enduml
