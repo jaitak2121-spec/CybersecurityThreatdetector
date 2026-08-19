@@ -1,0 +1,112 @@
+@startuml object-diagram
+skinparam style strictuml
+hide empty members
+
+title Object Diagram - Concrete Scenario: Brute-Force Incident Response
+
+object "webServer01 : Device" as dev1 {
+  deviceId = "DEV-SRV-04"
+  deviceName = "Auth-Portal-Server"
+  ipAddress = "192.168.10.45"
+  osType = "Ubuntu 22.04 LTS"
+  status = "ISOLATED"
+}
+
+object "failedLoginEvent : SecurityEvent" as ev1 {
+  eventId = "EVT-8821"
+  eventType = "AUTH_FAILURE"
+  timestamp = "2026-08-18T10:14:02Z"
+  sourceIp = "203.0.113.19"
+  rawData = "Failed password for user admin from 203.0.113.19 port 49152 ssh2"
+  severity = "HIGH"
+  status = "PROCESSED"
+}
+
+object "bruteForceRule : DetectionRule" as rule1 {
+  ruleId = "RULE-AUTH-005"
+  ruleName = "SSH/Web Brute Force Threshold Exceeded"
+  conditionPattern = "count(AUTH_FAILURE, sourceIp) > 5 within 60s"
+  severityThreshold = "HIGH"
+  isEnabled = true
+}
+
+object "sshBruteForceThreat : Threat" as threat1 {
+  threatId = "THREAT-2026-092"
+  threatType = "Credential Access - Brute Force"
+  severity = "CRITICAL"
+  source = "203.0.113.19"
+  status = "ACTIVE"
+}
+
+object "authAnomalyAlert : Alert" as alert1 {
+  alertId = "ALT-9042"
+  timestamp = "2026-08-18T10:14:05Z"
+  severity = "HIGH"
+  status = "ESCALATED"
+  description = "Excessive failed logins detected on Auth-Portal-Server from 203.0.113.19"
+}
+
+object "activeIncident : Incident" as inc1 {
+  incidentId = "INC-2026-0044"
+  title = "Brute Force Attack on Internal Auth Portal"
+  severity = "CRITICAL"
+  status = "CONTAINED"
+  createdAt = "2026-08-18T10:15:30Z"
+  description = "Repeated credential stuffing attempts resulting in host-level isolation."
+}
+
+object "authLogEvidence : Evidence" as evd1 {
+  evidenceId = "EVD-3301"
+  evidenceType = "AUTH_LOG_EXTRACT"
+  source = "/var/log/auth.log"
+  timestamp = "2026-08-18T10:16:00Z"
+  description = "Extracted 45 failed authentication attempts within 30 seconds"
+  payloadData = "SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
+
+object "isolateAction : ResponseAction" as act1 {
+  actionId = "ACT-1092"
+  actionType = "ISOLATE_DEVICE"
+  status = "COMPLETED"
+  executedAt = "2026-08-18T10:18:12Z"
+  outcome = "Network interface disabled; device isolated successfully"
+}
+
+object "actionAuditLog : SecurityLog" as log1 {
+  logId = "LOG-77492"
+  timestamp = "2026-08-18T10:18:13Z"
+  eventType = "RESPONSE_EXECUTION"
+  message = "ResponseAction ACT-1092 (ISOLATE_DEVICE) successfully applied to DEV-SRV-04"
+  sourceComponent = "IncidentResponseModule"
+}
+
+object "dailySecuritySummary : SecurityReport" as rep1 {
+  reportId = "REP-2026-08-18"
+  generatedAt = "2026-08-18T23:00:00Z"
+  periodCovered = "2026-08-18"
+  summary = "1 Critical incident contained, 1 host isolated, 0 data exfiltration events"
+  threatLevelDistribution = "{'CRITICAL': 1, 'HIGH': 3, 'LOW': 12}"
+}
+
+' --- Links with roles/labels ---
+
+dev1 -- ev1 : generated >
+rule1 ..> ev1 : evaluated
+rule1 ..> alert1 : generated
+ev1 -- threat1 : indicates >
+ev1 -- alert1 : triggered >
+threat1 -- alert1 : identified in >
+
+alert1 -- inc1 : escalated to >
+threat1 -- inc1 : associated with >
+inc1 -- dev1 : affected device >
+
+inc1 *-- evd1 : contains >
+inc1 o-- act1 : executed >
+act1 --> dev1 : isolated >
+
+log1 ..> act1 : audited
+rep1 ..> inc1 : summarized in
+rep1 ..> threat1 : summarized in
+
+@enduml
