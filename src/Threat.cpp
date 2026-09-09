@@ -43,7 +43,7 @@ void Threat::displayThreat() const
     cout << "Status      : " << status << endl;
 }
 
-bool Threat::operator>(const Threat& other) const
+bool operator>(const Threat& t1, const Threat& t2)
 {
-    return severity > other.severity;
+    return t1.severity > t2.severity;
 }

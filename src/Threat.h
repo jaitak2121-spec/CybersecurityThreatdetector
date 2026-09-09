@@ -29,7 +29,7 @@ public:
 
     void displayThreat() const;
 
-    bool operator>(const Threat& other) const;
+    friend bool operator>(const Threat& t1, const Threat& t2);
 };
 
 #endif
