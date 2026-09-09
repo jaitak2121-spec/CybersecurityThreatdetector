@@ -1,6 +1,6 @@
 #ifndef SECURITYEVENT_H
 #define SECURITYEVENT_H
-
+  
 #include <string>
 
 using namespace std;
