@@ -42,6 +42,17 @@ void Threat::displayThreat() const
     cout << "Severity    : " << severity << endl;
     cout << "Status      : " << status << endl;
 }
+ostream& operator<<(ostream& out, const Threat& threat)
+{
+    out << "\n--- Threat Details ---" << endl;
+    out << "Threat ID   : " << threat.threatId << endl;
+    out << "Threat Type : " << threat.threatType << endl;
+    out << "Source IP   : " << threat.sourceIp << endl;
+    out << "Severity    : " << threat.severity << endl;
+    out << "Status      : " << threat.status << endl;
+
+    return out;
+}
 
 bool operator>(const Threat& t1, const Threat& t2)
 {
