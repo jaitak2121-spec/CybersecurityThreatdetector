@@ -2,6 +2,7 @@
 #define THREAT_H
 
 #include <string>
+#include <iostream>
 
 using namespace std;
 
@@ -29,7 +30,11 @@ public:
 
     void displayThreat() const;
 
+    // Existing operator overloading
     friend bool operator>(const Threat& t1, const Threat& t2);
+
+    // NEW: stream operator overloading
+    friend ostream& operator<<(ostream& out, const Threat& threat);
 };
 
 #endif
