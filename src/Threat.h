@@ -9,6 +9,20 @@ using namespace std;
 class Threat
 {
 private:
+    class ThreatLevel
+    {
+    public:
+        static string getLevel(int severity)
+        {
+            if (severity >= 5)
+                return "CRITICAL";
+            else if (severity >= 4)
+                return "HIGH";
+            else if (severity >= 2)
+                return "MEDIUM";
+            else
+                return "LOW";
+        }
     string threatId;
     string threatType;
     string sourceIp;
