@@ -4,11 +4,9 @@
 using namespace std;
 
 
-// Definition of static variable
 int Threat::threatCount = 0;
 
 
-// Constructor
 Threat::Threat(
     string id,
     string type,
@@ -23,12 +21,10 @@ Threat::Threat(
     severity = sev;
     status = stat;
 
-    // Increment threat count
     threatCount++;
 }
 
 
-// Getter functions
 string Threat::getThreatId() const
 {
     return threatId;
@@ -45,7 +41,6 @@ int Threat::getSeverity() const
 }
 
 
-// Display threat
 void Threat::displayThreat() const
 {
     cout << "\n--- Threat Detected ---" << endl;
@@ -62,14 +57,12 @@ void Threat::displayThreat() const
 }
 
 
-// Static function
 int Threat::getThreatCount()
 {
     return threatCount;
 }
 
 
-// Existing operator > overloading
 bool operator>(
     const Threat& t1,
     const Threat& t2
@@ -79,7 +72,6 @@ bool operator>(
 }
 
 
-// NEW: Stream operator << overloading
 ostream& operator<<(
     ostream& out,
     const Threat& threat
