@@ -5,7 +5,7 @@
 
 using namespace std;
 
-class NetworkEvent : public SecurityEvent
+class NetworkEvent final : public SecurityEvent
 {
 private:
     int destinationPort;
