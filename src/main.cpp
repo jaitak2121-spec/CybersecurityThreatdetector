@@ -21,7 +21,7 @@ int main()
 
     LoginEvent loginEvent(
         "EVT-001",
-        "2026-08-25 10:30:00",
+        "2026-09-17 10:30:00",
         "203.0.113.19",
         5,
         "admin",
@@ -37,7 +37,7 @@ int main()
 
     NetworkEvent networkEvent(
         "EVT-002",
-        "2026-08-25 10:32:00",
+        "2026-09-17 10:32:00",
         "203.0.113.20",
         3,
         22,
@@ -59,13 +59,10 @@ int main()
     // -----------------------------------------
 
     cout << "\n========================================" << endl;
-    cout << " Method Overloading Demonstration" << endl;
+    cout << " Method Overloading" << endl;
     cout << "========================================" << endl;
 
     Threat threat1 = detector.detectThreat(loginEvent);
-
-    threat1.displayThreat();
-
 
     Threat threat2 = detector.detectThreat(
         "NETWORK_EVENT",
@@ -73,47 +70,91 @@ int main()
         "203.0.113.20"
     );
 
-    threat2.displayThreat();
-
 
     // -----------------------------------------
-    // 5. Operator Overloading
+    // 5. Stream Operator Overloading
     // -----------------------------------------
 
     cout << "\n========================================" << endl;
-    cout << " Operator Overloading Demonstration" << endl;
+    cout << " Stream Operator Overloading" << endl;
+    cout << "========================================" << endl;
+
+    cout << threat1;
+    cout << threat2;
+
+
+    // -----------------------------------------
+    // 6. Existing > Operator Overloading
+    // -----------------------------------------
+
+    cout << "\n========================================" << endl;
+    cout << " Operator > Overloading" << endl;
     cout << "========================================" << endl;
 
     if (threat1 > threat2)
     {
-        cout << "Threat 1 has higher severity than Threat 2."
-             << endl;
+        cout << "Threat 1 has higher severity." << endl;
     }
     else if (threat2 > threat1)
     {
-        cout << "Threat 2 has higher severity than Threat 1."
-             << endl;
+        cout << "Threat 2 has higher severity." << endl;
     }
     else
     {
-        cout << "Both threats have equal severity."
-             << endl;
+        cout << "Both threats have equal severity." << endl;
     }
 
 
     // -----------------------------------------
-    // 6. Access Specifiers
+    // 7. Static Variable + Static Function
     // -----------------------------------------
 
     cout << "\n========================================" << endl;
-    cout << " Access Specifier Demonstration" << endl;
+    cout << " Static Variable / Static Function" << endl;
     cout << "========================================" << endl;
 
-    cout << "Event ID accessed through public method: "
-         << loginEvent.getEventId()
+    cout << "Total Threat Objects Created: "
+         << Threat::getThreatCount()
          << endl;
 
-    cout << "Direct access to private data is not allowed."
+
+    // -----------------------------------------
+    // 8. Object Slicing
+    // -----------------------------------------
+
+    cout << "\n========================================" << endl;
+    cout << " Object Slicing" << endl;
+    cout << "========================================" << endl;
+
+    LoginEvent originalLogin(
+        "EVT-003",
+        "2026-09-17 10:40:00",
+        "203.0.113.50",
+        5,
+        "admin",
+        false
+    );
+
+    // Derived object copied into base object
+    SecurityEvent slicedEvent = originalLogin;
+
+    cout << "\nOriginal LoginEvent:" << endl;
+    originalLogin.displayEvent();
+
+    cout << "\nSliced SecurityEvent:" << endl;
+    slicedEvent.displayEvent();
+
+
+    // -----------------------------------------
+    // 9. Final
+    // -----------------------------------------
+
+    cout << "\n========================================" << endl;
+    cout << " final Keyword" << endl;
+    cout << "========================================" << endl;
+
+    cout << "NetworkEvent is declared as final." << endl;
+    cout << "Therefore, another class cannot inherit from NetworkEvent."
          << endl;
 
 
