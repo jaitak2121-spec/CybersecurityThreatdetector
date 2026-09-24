@@ -21,6 +21,7 @@ public:
         bool success
     );
 
+    // Virtual function overriding
     void displayEvent() const override;
 
     bool isFailedLogin() const;
