@@ -1,17 +1,17 @@
 #ifndef SECURITYEVENT_H
 #define SECURITYEVENT_H
-  
+
 #include <string>
+#include "EventInfo.h"
 
 using namespace std;
 
-class SecurityEvent
+class SecurityEvent : virtual public EventInfo
 {
 private:
     string eventId;
     string eventType;
     string timestamp;
-    string sourceIp;
     int severity;
 
 protected:
@@ -30,9 +30,8 @@ public:
     virtual ~SecurityEvent() = default;
 
     string getEventId() const;
-    string getSourceIp() const;
-    int getEventSeverity() const;
 
+    // Virtual function
     virtual void displayEvent() const;
 };
 
