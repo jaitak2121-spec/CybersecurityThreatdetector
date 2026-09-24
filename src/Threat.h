@@ -10,6 +10,7 @@ class Threat
 {
 private:
 
+    // Nested class
     class ThreatLevel
     {
     public:
@@ -26,6 +27,7 @@ private:
         }
     };
 
+    // Static variable
     static int threatCount;
 
     string threatId;
@@ -50,13 +52,16 @@ public:
 
     void displayThreat() const;
 
+    // Static function
     static int getThreatCount();
 
+    // Friend operator overloading
     friend bool operator>(
         const Threat& t1,
         const Threat& t2
     );
 
+    // Stream operator overloading using friend function
     friend ostream& operator<<(
         ostream& out,
         const Threat& threat
