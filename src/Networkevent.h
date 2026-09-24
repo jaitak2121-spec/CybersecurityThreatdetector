@@ -21,6 +21,7 @@ public:
         string proto
     );
 
+    // Virtual function overriding
     void displayEvent() const override;
 };
 
