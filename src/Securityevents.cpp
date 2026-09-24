@@ -10,45 +10,40 @@ SecurityEvent::SecurityEvent(
     string ip,
     int sev
 )
+    : EventInfo(ip)
 {
-    eventId = id;
-    eventType = type;
-    timestamp = time;
-    sourceIp = ip;
-    severity = sev;
-}
-
-string SecurityEvent::getEventType() const
-{
-    return eventType;
-}
-
-int SecurityEvent::getSeverity() const
-{
-    return severity;
+    this->eventId = id;
+    this->eventType = type;
+    this->timestamp = time;
+    this->severity = sev;
 }
 
 string SecurityEvent::getEventId() const
 {
-    return eventId;
+    return this->eventId;
 }
 
 string SecurityEvent::getSourceIp() const
 {
-    return sourceIp;
+    return EventInfo::getSourceIp();
 }
 
-int SecurityEvent::getEventSeverity() const
+string SecurityEvent::getEventType() const
 {
-    return severity;
+    return this->eventType;
+}
+
+int SecurityEvent::getSeverity() const
+{
+    return this->severity;
 }
 
 void SecurityEvent::displayEvent() const
 {
     cout << "\n--- Security Event ---" << endl;
-    cout << "Event ID    : " << eventId << endl;
-    cout << "Event Type  : " << eventType << endl;
-    cout << "Timestamp   : " << timestamp << endl;
-    cout << "Source IP   : " << sourceIp << endl;
-    cout << "Severity    : " << severity << endl;
+    cout << "Event ID    : " << this->eventId << endl;
+    cout << "Event Type  : " << this->eventType << endl;
+    cout << "Timestamp   : " << this->timestamp << endl;
+    cout << "Source IP   : " << this->sourceIp << endl;
+    cout << "Severity    : " << this->severity << endl;
 }
