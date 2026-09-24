@@ -13,24 +13,29 @@ LoginEvent::LoginEvent(
 )
     : SecurityEvent(id, "LOGIN_EVENT", time, ip, sev)
 {
-    username = user;
-    loginSuccessful = success;
+    this->username = user;
+    this->loginSuccessful = success;
 }
 
 void LoginEvent::displayEvent() const
 {
     cout << "\n--- Login Event ---" << endl;
-    cout << "Event ID        : " << getEventId() << endl;
-    cout << "Event Type      : " << getEventType() << endl;
-    cout << "Source IP       : " << getSourceIp() << endl;
-    cout << "Username        : " << username << endl;
-    cout << "Login Status    : "
-         << (loginSuccessful ? "Successful" : "Failed")
-         << endl;
-    cout << "Severity        : " << getSeverity() << endl;
+
+    cout << "Event ID    : " << getEventId() << endl;
+    cout << "Event Type  : LOGIN_EVENT" << endl;
+    cout << "Source IP   : " << getSourceIp() << endl;
+    cout << "Severity    : " << getSeverity() << endl;
+    cout << "Username    : " << this->username << endl;
+
+    cout << "Login Status: ";
+
+    if (this->loginSuccessful)
+        cout << "Successful" << endl;
+    else
+        cout << "Failed" << endl;
 }
 
 bool LoginEvent::isFailedLogin() const
 {
-    return !loginSuccessful;
+    return !this->loginSuccessful;
 }
