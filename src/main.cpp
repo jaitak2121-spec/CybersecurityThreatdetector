@@ -38,19 +38,6 @@ int main()
     // A single shared log receives every activity in the run.
     SecurityLog securityLog;
 
-<<<<<<< HEAD
-    // -----------------------------------------
-    // 1. Login Event
-    // -----------------------------------------
-
-    LoginEvent loginEvent(
-        "EVT-001",
-        "2026-09-17 10:30:00",
-        "203.0.113.19",
-        5,
-        "admin",
-        false
-=======
     // ========================================================
     // STEP 1 - DEVICE
     // The device that generates the security events.
@@ -62,31 +49,15 @@ int main()
         "Auth-Portal-Server",
         "192.168.10.45",
         "Ubuntu 22.04 LTS"
->>>>>>> dd8f70d (Updated security events and combined all)
     );
 
     authServer.displayDevice();
 
-<<<<<<< HEAD
-
-    // -----------------------------------------
-    // 2. Network Event
-    // -----------------------------------------
-
-    NetworkEvent networkEvent(
-        "EVT-002",
-        "2026-09-17 10:32:00",
-        "203.0.113.20",
-        3,
-        22,
-        "TCP"
-=======
     securityLog.writeLogEntry(
         "2026-08-25 10:29:00",
         "EVENT",
         "Device " + authServer.getDeviceId() + " online",
         "EventGenerator"
->>>>>>> dd8f70d (Updated security events and combined all)
     );
 
     // ========================================================
@@ -99,11 +70,6 @@ int main()
 
     vector<SecurityEvent*> events;
 
-<<<<<<< HEAD
-    // -----------------------------------------
-    // 3. Threat Detector
-    // -----------------------------------------
-=======
     // Five failed logins from one source IP (the brute-force case).
     events.push_back(new LoginEvent(
         "EVT-8801", "2026-08-25 10:14:02", "203.0.113.19", 4,
@@ -148,7 +114,6 @@ int main()
     // STEP 3 - CONFIGURE DETECTION RULES
     // ========================================================
     printSection("STEP 3: Configure Detection Rules");
->>>>>>> dd8f70d (Updated security events and combined all)
 
     ThreatDetector detector;
 
@@ -176,18 +141,12 @@ int main()
 
     detector.listRules();
 
-<<<<<<< HEAD
-    cout << "\n========================================" << endl;
-    cout << " Method Overloading" << endl;
-    cout << "========================================" << endl;
-=======
     securityLog.writeLogEntry(
         "2026-08-25 10:16:10",
         "DETECTION",
         "Detection rules configured",
         "DetectionModule"
     );
->>>>>>> dd8f70d (Updated security events and combined all)
 
     // ========================================================
     // STEP 4 - DETECT THREATS
@@ -195,9 +154,6 @@ int main()
     // ========================================================
     printSection("STEP 4: Detect Threats");
 
-<<<<<<< HEAD
-    Threat threat2 = detector.detectThreat(
-=======
     // Keep the detected threats so we can report on them later.
     vector<Threat> threats;
 
@@ -243,7 +199,6 @@ int main()
     printSection("STEP 5: Function Overloading");
 
     Threat overloadDemo = detector.detectThreat(
->>>>>>> dd8f70d (Updated security events and combined all)
         "NETWORK_EVENT",
         4,
         "203.0.113.20"
@@ -251,40 +206,6 @@ int main()
     overloadDemo.displayThreat();
     threats.push_back(overloadDemo);
 
-<<<<<<< HEAD
-
-    // -----------------------------------------
-    // 5. Stream Operator Overloading
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Stream Operator Overloading" << endl;
-    cout << "========================================" << endl;
-
-    cout << threat1;
-    cout << threat2;
-
-
-    // -----------------------------------------
-    // 6. Existing > Operator Overloading
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Operator > Overloading" << endl;
-    cout << "========================================" << endl;
-
-    if (threat1 > threat2)
-    {
-        cout << "Threat 1 has higher severity." << endl;
-    }
-    else if (threat2 > threat1)
-    {
-        cout << "Threat 2 has higher severity." << endl;
-    }
-    else
-    {
-        cout << "Both threats have equal severity." << endl;
-=======
     // ========================================================
     // STEP 6 - OPERATOR OVERLOADING + FRIEND FUNCTION
     // ========================================================
@@ -300,65 +221,11 @@ int main()
     else
     {
         cout << "\noverloadDemo has a higher or equal severity. (operator>)" << endl;
->>>>>>> dd8f70d (Updated security events and combined all)
     }
 
     cout << "\nTotal threats created      : "
          << Threat::getThreatCount() << " (static function)" << endl;
 
-<<<<<<< HEAD
-    // -----------------------------------------
-    // 7. Static Variable + Static Function
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Static Variable / Static Function" << endl;
-    cout << "========================================" << endl;
-
-    cout << "Total Threat Objects Created: "
-         << Threat::getThreatCount()
-         << endl;
-
-
-    // -----------------------------------------
-    // 8. Object Slicing
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Object Slicing" << endl;
-    cout << "========================================" << endl;
-
-    LoginEvent originalLogin(
-        "EVT-003",
-        "2026-09-17 10:40:00",
-        "203.0.113.50",
-        5,
-        "admin",
-        false
-    );
-
-    // Derived object copied into base object
-    SecurityEvent slicedEvent = originalLogin;
-
-    cout << "\nOriginal LoginEvent:" << endl;
-    originalLogin.displayEvent();
-
-    cout << "\nSliced SecurityEvent:" << endl;
-    slicedEvent.displayEvent();
-
-
-    // -----------------------------------------
-    // 9. final Keyword
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " final Keyword" << endl;
-    cout << "========================================" << endl;
-
-    cout << "NetworkEvent is declared as final." << endl;
-    cout << "Therefore, another class cannot inherit from NetworkEvent."
-         << endl;
-=======
     // ========================================================
     // STEP 7 - GENERATE ALERT
     // Only the serious (ACTIVE) threat becomes an alert.
@@ -603,101 +470,12 @@ int main()
     cout << "Alert    : " << *bruteForceAlert << endl;
     cout << "Incident : " << *incident << endl;
     cout << "Evidence : " << *evidence1 << endl;
->>>>>>> dd8f70d (Updated security events and combined all)
 
     // ========================================================
     // STEP 12 - SECURITY LOG
     // ========================================================
     printSection("STEP 12: Security Log");
 
-<<<<<<< HEAD
-    // -----------------------------------------
-    // 10. this Pointer
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " this Pointer" << endl;
-    cout << "========================================" << endl;
-
-    cout << "The this pointer refers to the current object." << endl;
-    cout << "It is used inside Threat and event constructors."
-         << endl;
-
-
-    // -----------------------------------------
-    // 11. Virtual Function
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Virtual Function" << endl;
-    cout << "========================================" << endl;
-
-    SecurityEvent* eventPtr = &loginEvent;
-
-    cout << "\nCalling displayEvent() using base pointer:"
-         << endl;
-
-    eventPtr->displayEvent();
-
-
-    // -----------------------------------------
-    // 12. Pointer to Object
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Pointer to Object" << endl;
-    cout << "========================================" << endl;
-
-    SecurityEvent* securityEventPtr = &networkEvent;
-
-    cout << "Calling NetworkEvent through SecurityEvent pointer:"
-         << endl;
-
-    securityEventPtr->displayEvent();
-
-
-    // -----------------------------------------
-    // 13. Pointer to Derived Class
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Pointer to Derived Class" << endl;
-    cout << "========================================" << endl;
-
-    LoginEvent* loginPtr = &loginEvent;
-
-    cout << "Calling LoginEvent using derived-class pointer:"
-         << endl;
-
-    loginPtr->displayEvent();
-
-
-    // -----------------------------------------
-    // 14. Virtual Base Class
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-    cout << " Virtual Base Class" << endl;
-    cout << "========================================" << endl;
-
-    cout << "EventInfo is used as a virtual base class"
-         << endl;
-
-    cout << "SecurityEvent inherits virtually from EventInfo."
-         << endl;
-
-    cout << "Source IP obtained through the virtual base:"
-         << endl;
-
-    cout << eventPtr->getSourceIp() << endl;
-
-
-    // -----------------------------------------
-    // 15. Simulation Completed
-    // -----------------------------------------
-
-    cout << "\n========================================" << endl;
-=======
     securityLog.printAll();
 
     // ========================================================
@@ -745,7 +523,6 @@ int main()
     delete incident;
 
     cout << "\n==============================================" << endl;
->>>>>>> dd8f70d (Updated security events and combined all)
     cout << " Simulation Completed" << endl;
     cout << " All actions were simulated - no real security" << endl;
     cout << " operations were performed." << endl;

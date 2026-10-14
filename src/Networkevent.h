@@ -5,8 +5,6 @@
 
 using namespace std;
 
-<<<<<<< HEAD
-=======
 // ============================================================
 // NetworkEvent
 // ------------------------------------------------------------
@@ -23,7 +21,6 @@ using namespace std;
 //        class X : public NetworkEvent { ... };   // ERROR
 // ============================================================
 
->>>>>>> dd8f70d (Updated security events and combined all)
 class NetworkEvent final : public SecurityEvent
 {
 private:
@@ -40,7 +37,6 @@ public:
         string proto
     );
 
-    // Virtual function overriding
     void displayEvent() const override;
     SecurityEvent* clone() const override;
 

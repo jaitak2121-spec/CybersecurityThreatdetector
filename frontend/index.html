@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cybersecurity Threat Detection &amp; Incident Response Simulator</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #121d33;
+    --panel-2: #0e1830;
+    --border: #233254;
+    --text: #e6edf7;
+    --muted: #93a4c3;
+    --accent: #38bdf8;
+    --accent-2: #818cf8;
+    --crit: #f87171;
+    --high: #fb923c;
+    --med: #facc15;
+    --low: #4ade80;
+    --sim: #22d3ee;
+    --ok: #34d399;
+    --fail: #f87171;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 70% -10%, #15284d 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header.hero {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap; margin-bottom: 8px;
+  }
+  .hero h1 { font-size: 23px; margin: 0; letter-spacing: .2px; }
+  .hero p  { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(52,211,153,.12); color: var(--ok);
+    border: 1px solid rgba(52,211,153,.35);
+    padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; box-shadow: var(--shadow);
+    margin-top: 18px;
+  }
+  .card h2 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 1.3px;
+    color: var(--muted); margin: 0 0 14px;
+  }
+
+  /* Pipeline */
+  .pipeline { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .step {
+    flex: 1 1 92px; min-width: 92px; position: relative;
+    background: #0f1b34; border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 9px; text-align: center; transition: all .25s ease;
+  }
+  .step .n { font-size: 10.5px; color: var(--muted); }
+  .step .t { font-size: 12.5px; font-weight: 600; margin-top: 3px; }
+  .step .ic { font-size: 17px; }
+  .step.active {
+    border-color: var(--accent); background: #10294a;
+    box-shadow: 0 0 0 1px var(--accent), 0 6px 18px rgba(56,189,248,.22);
+    transform: translateY(-2px);
+  }
+  .step.done { border-color: rgba(52,211,153,.5); }
+
+  /* Controls */
+  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+  button.run {
+    background: linear-gradient(180deg, var(--accent) 0%, #0ea5e9 100%);
+    color: #06243b; border: none; border-radius: 11px;
+    padding: 13px 26px; font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 8px 20px rgba(56,189,248,.28); transition: transform .08s ease, filter .2s ease;
+  }
+  button.run:hover { filter: brightness(1.06); }
+  button.run:active { transform: translateY(1px); }
+  button.run:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25);
+    border-top-color: #06243b; border-radius: 50%; display: inline-block;
+    vertical-align: -3px; margin-right: 8px; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat {
+    background: #0f1b34; border: 1px solid var(--border); border-radius: 11px;
+    padding: 14px; text-align: center;
+  }
+  .stat .v { font-size: 26px; font-weight: 800; }
+  .stat .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
+  .stat.crit .v { color: var(--crit); }
+  .stat.alert .v { color: var(--high); }
+  .stat.inc .v { color: var(--accent-2); }
+  .stat.log .v { color: var(--accent); }
+
+  /* Output */
+  .sections { display: flex; flex-direction: column; gap: 10px; }
+  .sec { background: #091125; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .sec > .h {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    padding: 11px 14px; background: #0d1a33; font-weight: 600; font-size: 13.5px;
+    user-select: none;
+  }
+  .sec > .h .chev { margin-left: auto; color: var(--muted); transition: transform .2s ease; }
+  .sec.collapsed > .h .chev { transform: rotate(-90deg); }
+  .sec .b { padding: 2px 14px 12px; }
+  .sec.collapsed .b { display: none; }
+  pre.term {
+    margin: 0; padding: 10px 2px; white-space: pre-wrap; word-break: break-word;
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.6px; line-height: 1.55; color: #cdd9ee;
+  }
+  .ln { display: block; }
+  .ln.crit { color: var(--crit); font-weight: 600; }
+  .ln.high { color: var(--high); }
+  .ln.med  { color: var(--med); }
+  .ln.low  { color: var(--low); }
+  .ln.sim  { color: var(--sim); font-style: italic; }
+  .ln.rule { color: #fcd34d; }
+  .ln.ok   { color: var(--ok); }
+  .ln.fail { color: var(--fail); font-weight: 600; }
+  .ln.head { color: var(--accent); font-weight: 700; }
+
+  .placeholder { color: var(--muted); font-size: 14px; text-align: center; padding: 26px 10px; }
+  .error-box {
+    background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.4);
+    color: #fecaca; border-radius: 10px; padding: 14px; font-family: ui-monospace, Menlo, monospace;
+    font-size: 12.6px; white-space: pre-wrap;
+  }
+
+  /* OOP concepts */
+  details.oop { margin-top: 0; }
+  details.oop summary {
+    cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 1.3px;
+    color: var(--muted); list-style: none; outline: none;
+  }
+  details.oop summary::-webkit-details-marker { display: none; }
+  details.oop summary::before { content: "▸ "; color: var(--accent); }
+  details.oop[open] summary::before { content: "▾ "; }
+  table.oop { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 13px; }
+  table.oop th, table.oop td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.oop th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .6px; }
+  table.oop td code { color: var(--accent); font-size: 12px; }
+  footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 26px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div>
+      <h1>🛡️ Cybersecurity Threat Detection &amp; Incident Response Simulator</h1>
+      <p>A live view of the C++ OOP simulator — events → detection → threat → alert → incident → response → report.</p>
+    </div>
+    <span class="badge"><span class="dot"></span> SAFE SIMULATION · nothing real is executed</span>
+  </header>
+
+  <!-- Pipeline -->
+  <section class="card">
+    <h2>Incident-response pipeline</h2>
+    <div class="pipeline" id="pipeline"></div>
+  </section>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="run" id="runBtn">▶ Run Simulation</button>
+    <span class="hint" id="hint">Click to compile &amp; run the real C++ program.</span>
+  </div>
+
+  <!-- Stats -->
+  <section class="card" id="statsCard" style="display:none;">
+    <h2>Run summary</h2>
+    <div class="stats">
+      <div class="stat crit"><div class="v" id="s-threats">–</div><div class="k">Threats</div></div>
+      <div class="stat alert"><div class="v" id="s-alerts">–</div><div class="k">Alerts</div></div>
+      <div class="stat inc"><div class="v" id="s-incidents">–</div><div class="k">Incidents</div></div>
+      <div class="stat log"><div class="v" id="s-logs">–</div><div class="k">Log entries</div></div>
+    </div>
+  </section>
+
+  <!-- Output -->
+  <section class="card">
+    <h2>Console output</h2>
+    <div id="output">
+      <div class="placeholder">The simulator output will appear here, broken into its steps.</div>
+    </div>
+  </section>
+
+  <!-- OOP concepts (viva helper) -->
+  <section class="card">
+    <details class="oop">
+      <summary>OOP concepts demonstrated (viva crib sheet)</summary>
+      <table class="oop">
+        <thead><tr><th>Concept</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td>Virtual base / virtual inheritance</td><td><code>SecurityEvent : virtual public EventInfo</code></td></tr>
+          <tr><td>Virtual function + overriding</td><td><code>displayEvent()</code> in SecurityEvent / LoginEvent / NetworkEvent</td></tr>
+          <tr><td>Function overloading</td><td><code>ThreatDetector::detectThreat()</code> ×3 — Step 5</td></tr>
+          <tr><td>Operator overloading + friend</td><td><code>operator&lt;&lt;</code>, <code>operator&gt;</code> on Threat — Step 6</td></tr>
+          <tr><td>Nested class</td><td><code>Threat::ThreatLevel</code>, <code>SecurityLog::LogEntry</code> — Step 11e</td></tr>
+          <tr><td>Static variable + function</td><td><code>Threat::getThreatCount()</code>, Alert, SecurityLog — Step 11d</td></tr>
+          <tr><td>this pointer</td><td>LoginEvent ctor, <code>Threat::updateStatus()</code> — Step 11f</td></tr>
+          <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> → LoginEvent/NetworkEvent — Step 11a</td></tr>
+          <tr><td>Object slicing</td><td><code>SecurityEvent s = loginExample;</code> vs <code>clone()</code> — Step 11c</td></tr>
+          <tr><td>final keyword</td><td><code>class NetworkEvent final</code> — Step 11g</td></tr>
+        </tbody>
+      </table>
+    </details>
+  </section>
+
+  <footer>
+    Presentation frontend · runs the existing <code>src/*.cpp</code> program via a small local Python server · no data leaves your machine.
+  </footer>
+</div>
+
+<script>
+  const STEPS = [
+    { ic: "📡", t: "Events" },
+    { ic: "📋", t: "Rules" },
+    { ic: "⚠️", t: "Threats" },
+    { ic: "🔔", t: "Alert" },
+    { ic: "🗂️", t: "Incident" },
+    { ic: "🔎", t: "Evidence" },
+    { ic: "🛠️", t: "Response" },
+    { ic: "📝", t: "Log" },
+    { ic: "📊", t: "Report" },
+  ];
+
+  // Build pipeline chips
+  const pipeline = document.getElementById("pipeline");
+  STEPS.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.className = "step";
+    el.id = "step-" + i;
+    el.innerHTML = `<div class="ic">${s.ic}</div><div class="n">Step ${i + 1}</div><div class="t">${s.t}</div>`;
+    pipeline.appendChild(el);
+  });
+
+  const runBtn = document.getElementById("runBtn");
+  const hint = document.getElementById("hint");
+  const output = document.getElementById("output");
+
+  function classifyLine(line) {
+    const l = line.toLowerCase();
+    if (/={6,}/.test(line) || /^\s*(STEP|---|=====)/.test(line)) {
+      if (/step|===== security/i.test(line)) return "head";
+    }
+    if (l.includes("[simulation]")) return "sim";
+    if (l.includes("rule triggered")) return "rule";
+    if (l.includes("critical")) return "crit";
+    if (l.includes("brute-force pattern confirmed") || l.includes("failed ->") || l.includes("-> failed") || l.includes("status: failed")) return "fail";
+    if (/\bhigh\b/.test(l) && !l.includes("higher")) return "high";
+    if (/\bmedium\b/.test(l)) return "med";
+    if (/\b(low|info|normal)\b/.test(l)) return "low";
+    if (l.includes("completed") || l.includes("isolated") || l.includes("-> active")) return "ok";
+    return "";
+  }
+
+  // Split raw console text into { title, body } sections on the STEP banners.
+  function parseSections(text) {
+    const lines = text.split("\n");
+    const sections = [];
+    let current = { title: "Intro", lines: [] };
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const isBar = /^=+\s*$/.test(line.trim());
+      const next = lines[i + 1] || "";
+      const after = lines[i + 2] || "";
+      // A section header is: bar / " Title" / bar
+      if (isBar && next.trim() && /^=+\s*$/.test(after.trim())) {
+        if (current.lines.length) sections.push(current);
+        current = { title: next.trim(), lines: [] };
+        i += 2; // skip the title + closing bar
+        continue;
+      }
+      current.lines.push(line);
+    }
+    if (current.lines.length) sections.push(current);
+    return sections;
+  }
+
+  function renderOutput(text) {
+    const sections = parseSections(text);
+    output.innerHTML = "";
+    const frag = document.createDocumentFragment();
+    sections.forEach((sec, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "sec" + (idx === 0 ? "" : "");
+      const h = document.createElement("div");
+      h.className = "h";
+      h.innerHTML = `<span>${sec.title}</span><span class="chev">▾</span>`;
+      h.onclick = () => wrap.classList.toggle("collapsed");
+      const b = document.createElement("div");
+      b.className = "b";
+      const pre = document.createElement("pre");
+      pre.className = "term";
+      sec.lines.forEach((line) => {
+        const span = document.createElement("span");
+        span.className = "ln " + classifyLine(line);
+        span.textContent = line + "\n";
+        pre.appendChild(span);
+      });
+      b.appendChild(pre);
+      wrap.appendChild(h);
+      wrap.appendChild(b);
+      frag.appendChild(wrap);
+    });
+    output.appendChild(frag);
+  }
+
+  function num(re, text) {
+    const m = text.match(re);
+    return m ? m[1] : "–";
+  }
+  function updateStats(text) {
+    document.getElementById("statsCard").style.display = "";
+    document.getElementById("s-threats").textContent = num(/Threats detected\s*:\s*(\d+)/i, text);
+    document.getElementById("s-alerts").textContent = num(/Alerts raised\s*:\s*(\d+)/i, text);
+    document.getElementById("s-incidents").textContent = num(/Incidents created\s*:\s*(\d+)/i, text);
+    document.getElementById("s-logs").textContent = num(/Log entries recorded\s*:\s*(\d+)/i, text);
+  }
+
+  async function animatePipeline() {
+    // Light up each stage briefly for a nice "it's running" effect.
+    for (let i = 0; i < STEPS.length; i++) {
+      const el = document.getElementById("step-" + i);
+      el.classList.add("active");
+      await new Promise((r) => setTimeout(r, 90));
+      el.classList.remove("active");
+      el.classList.add("done");
+    }
+  }
+  function resetPipeline() {
+    STEPS.forEach((_, i) => {
+      const el = document.getElementById("step-" + i);
+      el.classList.remove("active", "done");
+    });
+  }
+
+  runBtn.addEventListener("click", async () => {
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span class="spinner"></span>Running…';
+    hint.textContent = "Compiling (if needed) and running the C++ simulator…";
+    resetPipeline();
+    output.innerHTML = '<div class="placeholder">Running…</div>';
+    document.getElementById("statsCard").style.display = "none";
+
+    const anim = animatePipeline();
+
+    try {
+      const res = await fetch("/api/run");
+      const data = await res.json();
+      await anim;
+
+      if (!data.ok) {
+        const label = data.stage === "build" ? "Compilation failed" : "Run failed";
+        output.innerHTML = "";
+        const box = document.createElement("div");
+        box.className = "error-box";
+        box.textContent = label + ":\n\n" + (data.buildLog || data.output || "Unknown error");
+        output.appendChild(box);
+        hint.textContent = label + ". See details above.";
+        STEPS.forEach((_, i) => document.getElementById("step-" + i).classList.remove("done"));
+        return;
+      }
+
+      renderOutput(data.output);
+      updateStats(data.output);
+      hint.textContent = data.built
+        ? "Compiled fresh and ran successfully. ✓"
+        : "Ran successfully (binary was up to date). ✓";
+    } catch (err) {
+      output.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "error-box";
+      box.textContent =
+        "Could not reach the local server.\n\n" +
+        "Make sure you started it with:\n    python3 frontend/server.py\n\n" +
+        "Details: " + err;
+      output.appendChild(box);
+      hint.textContent = "Server not reachable.";
+    } finally {
+      runBtn.disabled = false;
+      runBtn.innerHTML = "▶ Run Simulation";
+    }
+  });
+</script>
+</body>
+</html>

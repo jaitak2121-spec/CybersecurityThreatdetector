@@ -11,14 +11,6 @@ SecurityEvent::SecurityEvent(
     string ip,
     int sev
 )
-<<<<<<< HEAD:src/Securityevents.cpp
-    : EventInfo(ip)
-{
-    this->eventId = id;
-    this->eventType = type;
-    this->timestamp = time;
-    this->severity = sev;
-=======
     : EventInfo(ip)          // <-- virtual base is constructed here
 {
     eventId = id;
@@ -41,47 +33,20 @@ string SecurityEvent::getEventType() const
 int SecurityEvent::getSeverity() const
 {
     return severity;
->>>>>>> dd8f70d (Updated security events and combined all):src/SecurityEvent.cpp
 }
 
 string SecurityEvent::getTimestamp() const
 {
-<<<<<<< HEAD:src/Securityevents.cpp
-    return this->eventId;
-=======
     return timestamp;
->>>>>>> dd8f70d (Updated security events and combined all):src/SecurityEvent.cpp
 }
 
 string SecurityEvent::getRawData() const
 {
-<<<<<<< HEAD:src/Securityevents.cpp
-    return EventInfo::getSourceIp();
-}
-
-string SecurityEvent::getEventType() const
-{
-    return this->eventType;
-}
-
-int SecurityEvent::getSeverity() const
-{
-    return this->severity;
-=======
     return rawData;
->>>>>>> dd8f70d (Updated security events and combined all):src/SecurityEvent.cpp
 }
 
 void SecurityEvent::displayEvent() const
 {
-<<<<<<< HEAD:src/Securityevents.cpp
-    cout << "\n--- Security Event ---" << endl;
-    cout << "Event ID    : " << this->eventId << endl;
-    cout << "Event Type  : " << this->eventType << endl;
-    cout << "Timestamp   : " << this->timestamp << endl;
-    cout << "Source IP   : " << this->sourceIp << endl;
-    cout << "Severity    : " << this->severity << endl;
-=======
     cout << "\n--- Security Event (base) ---" << endl;
     cout << "Event ID    : " << eventId << endl;
     cout << "Event Type  : " << eventType << endl;
@@ -93,5 +58,4 @@ void SecurityEvent::displayEvent() const
 SecurityEvent* SecurityEvent::clone() const
 {
     return new SecurityEvent(*this);
->>>>>>> dd8f70d (Updated security events and combined all):src/SecurityEvent.cpp
 }

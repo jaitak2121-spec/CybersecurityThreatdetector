@@ -16,30 +16,16 @@ NetworkEvent::NetworkEvent(
     : EventInfo(ip),
       SecurityEvent(id, "NETWORK_EVENT", time, ip, sev)
 {
-<<<<<<< HEAD
-    this->destinationPort = port;
-    this->protocol = proto;
-=======
     destinationPort = port;
     protocol = proto;
 
     rawData = "Network connection to port " + to_string(port)
               + " using " + proto;
->>>>>>> dd8f70d (Updated security events and combined all)
 }
 
 void NetworkEvent::displayEvent() const
 {
     cout << "\n--- Network Event ---" << endl;
-<<<<<<< HEAD
-
-    cout << "Event ID    : " << getEventId() << endl;
-    cout << "Event Type  : NETWORK_EVENT" << endl;
-    cout << "Source IP   : " << getSourceIp() << endl;
-    cout << "Severity    : " << getSeverity() << endl;
-    cout << "Destination : Port " << this->destinationPort << endl;
-    cout << "Protocol    : " << this->protocol << endl;
-=======
     cout << "Event ID        : " << getEventId() << endl;
     cout << "Event Type      : " << getEventType() << endl;
     cout << "Timestamp       : " << getTimestamp() << endl;
@@ -62,5 +48,4 @@ int NetworkEvent::getDestinationPort() const
 string NetworkEvent::getProtocol() const
 {
     return protocol;
->>>>>>> dd8f70d (Updated security events and combined all)
 }

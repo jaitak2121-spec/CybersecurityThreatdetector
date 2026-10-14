@@ -3,13 +3,6 @@
 
 using namespace std;
 
-<<<<<<< HEAD
-// Definition of static variable
-int Threat::threatCount = 0;
-
-
-// Constructor
-=======
 // ============================================================
 // OOP CONCEPT: STATIC VARIABLE DEFINITION
 // ------------------------------------------------------------
@@ -50,7 +43,6 @@ ostream& operator<<(ostream& out, const Threat::ThreatLevel& tl)
 
 // ---------- Threat ----------
 
->>>>>>> dd8f70d (Updated security events and combined all)
 Threat::Threat(
     string id,
     string type,
@@ -59,23 +51,6 @@ Threat::Threat(
     string stat
 )
 {
-<<<<<<< HEAD
-    // Demonstration of this pointer
-    this->threatId = id;
-    this->threatType = type;
-    this->sourceIp = ip;
-    this->severity = sev;
-    this->status = stat;
-
-    threatCount++;
-}
-
-
-// Getter functions
-string Threat::getThreatId() const
-{
-    return this->threatId;
-=======
     threatId = id;
     threatType = type;
     sourceIp = ip;
@@ -99,47 +74,18 @@ string Threat::getStatus() const      { return status; }
 Threat::ThreatLevel Threat::getLevel() const
 {
     return ThreatLevel(severity);
->>>>>>> dd8f70d (Updated security events and combined all)
 }
 
 void Threat::updateStatus(string newStatus)
 {
-<<<<<<< HEAD
-    return this->threatType;
-}
-
-int Threat::getSeverity() const
-{
-    return this->severity;
-=======
     // OOP CONCEPT: this POINTER - "this->status" is the member,
     // "newStatus" is the parameter. this-> removes any ambiguity.
     this->status = newStatus;
->>>>>>> dd8f70d (Updated security events and combined all)
 }
 
-
-// Display threat
 void Threat::displayThreat() const
 {
     cout << "\n--- Threat Detected ---" << endl;
-<<<<<<< HEAD
-
-    cout << "Threat ID   : " << this->threatId << endl;
-    cout << "Threat Type : " << this->threatType << endl;
-    cout << "Source IP   : " << this->sourceIp << endl;
-    cout << "Severity    : " << this->severity << endl;
-
-    cout << "Risk Level  : "
-         << ThreatLevel::getLevel(this->severity)
-         << endl;
-
-    cout << "Status      : " << this->status << endl;
-}
-
-
-// Static function
-=======
     cout << "Threat ID   : " << threatId << endl;
     cout << "Threat Type : " << threatType << endl;
     cout << "Source IP   : " << sourceIp << endl;
@@ -147,54 +93,12 @@ void Threat::displayThreat() const
     cout << "Status      : " << status << endl;
 }
 
->>>>>>> dd8f70d (Updated security events and combined all)
 int Threat::getThreatCount()
 {
     return threatCount;
 }
 
 
-<<<<<<< HEAD
-// Friend operator > overloading
-bool operator>(
-    const Threat& t1,
-    const Threat& t2
-)
-{
-    return t1.severity > t2.severity;
-}
-
-
-// Friend stream operator << overloading
-ostream& operator<<(
-    ostream& out,
-    const Threat& threat
-)
-{
-    out << "\n--- Threat Details ---" << endl;
-
-    out << "Threat ID   : "
-        << threat.threatId << endl;
-
-    out << "Threat Type : "
-        << threat.threatType << endl;
-
-    out << "Source IP   : "
-        << threat.sourceIp << endl;
-
-    out << "Severity    : "
-        << threat.severity << endl;
-
-    out << "Risk Level  : "
-        << Threat::ThreatLevel::getLevel(threat.severity)
-        << endl;
-
-    out << "Status      : "
-        << threat.status << endl;
-
-    return out;
-}
-=======
 // ============================================================
 // OOP CONCEPT: FRIEND FUNCTION + OPERATOR OVERLOADING
 // ------------------------------------------------------------
@@ -217,4 +121,3 @@ bool operator>(const Threat& t1, const Threat& t2)
 {
     return t1.severity > t2.severity;
 }
->>>>>>> dd8f70d (Updated security events and combined all)

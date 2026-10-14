@@ -56,27 +56,6 @@ public:
     };
 
 private:
-
-    // Nested class
-    class ThreatLevel
-    {
-    public:
-        static string getLevel(int severity)
-        {
-            if (severity >= 5)
-                return "CRITICAL";
-            else if (severity >= 4)
-                return "HIGH";
-            else if (severity >= 2)
-                return "MEDIUM";
-            else
-                return "LOW";
-        }
-    };
-
-    // Static variable
-    static int threatCount;
-
     string threatId;
     string threatType;
     string sourceIp;
@@ -90,7 +69,6 @@ private:
     static int threatCount;
 
 public:
-
     Threat(
         string id,
         string type,
@@ -114,22 +92,6 @@ public:
 
     void displayThreat() const;
 
-<<<<<<< HEAD
-    // Static function
-    static int getThreatCount();
-
-    // Friend operator overloading
-    friend bool operator>(
-        const Threat& t1,
-        const Threat& t2
-    );
-
-    // Stream operator overloading using friend function
-    friend ostream& operator<<(
-        ostream& out,
-        const Threat& threat
-    );
-=======
     // --- OOP CONCEPT: STATIC FUNCTION ---
     // Called as Threat::getThreatCount(); no object required.
     static int getThreatCount();
@@ -137,7 +99,6 @@ public:
     // --- OOP CONCEPT: FRIEND FUNCTIONS / OPERATOR OVERLOADING ---
     friend ostream& operator<<(ostream& out, const Threat& threat);
     friend bool operator>(const Threat& t1, const Threat& t2);
->>>>>>> dd8f70d (Updated security events and combined all)
 };
 
 #endif

@@ -38,11 +38,7 @@ public:
         bool success
     );
 
-<<<<<<< HEAD
-    // Virtual function overriding
-=======
     // Overrides SecurityEvent::displayEvent()
->>>>>>> dd8f70d (Updated security events and combined all)
     void displayEvent() const override;
 
     // Returns a full copy of the real object (no slicing).
