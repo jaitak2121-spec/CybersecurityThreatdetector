@@ -228,7 +228,7 @@ int main()
 
     // ========================================================
     // STEP 7 - GENERATE ALERT
-    // Only the serious (ACTIVE) threat becomes an alert.
+    // Only the serious (ACTIVE as we defined) threat becomes an alert.
     // ========================================================
     printSection("STEP 7: Generate Alert");
 
