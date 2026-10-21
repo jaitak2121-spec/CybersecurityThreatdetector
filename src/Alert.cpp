@@ -3,7 +3,7 @@
 
 using namespace std;
 
-// Static member must be defined once, outside the class.
+// Static member must be defined once, outside the class
 int Alert::alertCount = 0;
 
 Alert::Alert(
@@ -33,14 +33,14 @@ void Alert::updateStatus(string newStatus)
 
 void Alert::markFalsePositive(string reason)
 {
-    // Alternate Flow 2 of UC-01: a false positive is closed.
+    // Alternate Flow 2 of UC-01: a false positive is closed
     status = "CLOSED";
     description += " | Marked false positive: " + reason;
 }
 
 bool Alert::isEscalatable() const
 {
-    // Severity >= 4 (HIGH/CRITICAL) is worth an incident.
+    
     return severity >= 4;
 }
 
