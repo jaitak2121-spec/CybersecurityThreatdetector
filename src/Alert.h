@@ -5,11 +5,8 @@
 
 using namespace std;
 
-// ============================================================
-// Alert
-// ------------------------------------------------------------
+
 // A warning raised when a DetectionRule is triggered.
-//
 // OOP CONCEPTS DEMONSTRATED HERE:
 //  - STATIC VARIABLE + STATIC FUNCTION : alertCount tracks how
 //    many alerts exist, shared by all Alert objects.
