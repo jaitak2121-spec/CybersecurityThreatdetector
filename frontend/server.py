@@ -143,7 +143,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path in ("/", "/index.html"):
+        # SECURITY: this server exposes a STRICT allow-list of routes only.
+        # No part of the request (path, query string, headers or body) is
+        # ever passed to a shell or used to build a command line. The
+        # /api/run route always runs the SAME fixed binary with NO
+        # arguments and shell=False, so a client cannot influence what is
+        # executed - arbitrary command execution is not possible.
+        path = self.path.split("?", 1)[0]  # ignore any query string
+
+        if path in ("/", "/index.html"):
             try:
                 with open(INDEX_HTML, "r", encoding="utf-8") as f:
                     self._send(200, f.read(), "text/html; charset=utf-8")
@@ -152,29 +160,39 @@ class Handler(BaseHTTPRequestHandler):
                            "text/plain")
             return
 
-        if self.path == "/api/run":
+        if path == "/api/run":
             result = run_simulator()
             self._send(200, json.dumps(result), "application/json")
             return
 
+        # Anything else is rejected. (Other HTTP methods such as POST/PUT
+        # are not implemented, so they return 501 automatically.)
         self._send(404, "Not found", "text/plain")
 
 
 def main():
-    port = 8000
+    # Render (and most hosting platforms) tell the app which port to use
+    # through the PORT environment variable. Default to 10000, which is
+    # Render's default web-service port. An optional command-line argument
+    # overrides it for convenient local use.
+    port = int(os.environ.get("PORT", "10000"))
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
-            print("Port must be a number. Using 8000.")
+            print(f"Port argument must be a number. Using {port}.")
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    url = f"http://localhost:{port}"
+    # Bind all interfaces so the server is reachable from outside the
+    # container (required on Render). Locally you still open localhost.
+    host = "0.0.0.0"
+
+    server = ThreadingHTTPServer((host, port), Handler)
     print("=" * 56)
     print(" Cybersecurity Simulator - presentation frontend")
     print("=" * 56)
     print(f" Project root : {PROJECT_ROOT}")
-    print(f" Open in your browser:  {url}")
+    print(f" Listening on : {host}:{port}")
+    print(f" Local URL    : http://localhost:{port}")
     print(" Press Ctrl+C to stop.")
     print("=" * 56)
     try:

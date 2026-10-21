@@ -31,6 +31,70 @@ console.
 
 ---
 
+## Web frontend (for presenting)
+
+A small presentation frontend lives in [`frontend/`](frontend/). It is a viewer
+and launcher for the **real C++ program** — it compiles and runs `./simulator`
+and shows the output nicely in the browser. It uses only the Python standard
+library (no installs) and does **not** reimplement the simulation.
+
+Run it locally:
+
+```bash
+python3 frontend/server.py
+```
+
+Then open **http://localhost:10000** and click **Run Simulation**.
+(The port defaults to `10000`, or the value of the `PORT` environment variable;
+pass a number to override, e.g. `python3 frontend/server.py 8000`.)
+
+---
+
+## Deploy to Render (Docker)
+
+The project ships a root [`Dockerfile`](Dockerfile) that installs Python 3 and
+`g++`, compiles the C++ simulator inside a Linux container, and serves the
+frontend. The server binds `0.0.0.0` and listens on `$PORT` (Render sets this
+automatically; it defaults to `10000`).
+
+### 1. Test the image locally (optional, needs Docker)
+
+```bash
+docker build -t threat-sim .
+docker run --rm -p 10000:10000 threat-sim
+```
+
+Open **http://localhost:10000** and click **Run Simulation**.
+
+### 2. Deploy on Render
+
+1. Push this repository to GitHub (handle Git yourself — this project is not
+   auto-committed).
+2. In the [Render dashboard](https://dashboard.render.com/): **New +** →
+   **Web Service**, then connect the GitHub repository.
+3. Render auto-detects the `Dockerfile`. Confirm these settings:
+   - **Runtime:** `Docker`
+   - **Instance type:** `Free` is fine for a student demo
+   - **Port / start command:** leave as default — Render provides `PORT` and the
+     Dockerfile's `CMD` starts the server; do not override them.
+4. Click **Create Web Service**. Render builds the image (this compiles the C++)
+   and starts the container.
+5. When the build finishes, open the `https://<your-app>.onrender.com` URL and
+   click **Run Simulation**.
+
+> Note: Render's free instances sleep when idle, so the first request after a
+> pause can take ~30–60 seconds to wake and respond. This is normal.
+
+### Security note
+
+The HTTP server exposes a strict allow-list of routes only (`/`, `/index.html`,
+`/api/run`). No part of any request is passed to a shell or used to build a
+command: `/api/run` always runs the same fixed binary with no arguments and
+`shell=False`, so arbitrary command execution is not possible.
+
+---
+
+
 ## What the simulator does (the workflow)
 
 It reproduces the brute-force scenario from the project's object diagram:

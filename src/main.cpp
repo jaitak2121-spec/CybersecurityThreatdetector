@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-
+#include "TypeCastingDemo.h"
 #include "EventInfo.h"
 #include "SecurityEvent.h"
 #include "LoginEvent.h"
@@ -527,6 +527,7 @@ int main()
     cout << " All actions were simulated - no real security" << endl;
     cout << " operations were performed." << endl;
     cout << "==============================================" << endl;
+    TypeCastingDemo::runTypeCastingDemo();
 
     return 0;
 }

@@ -1,0 +1,16 @@
+# Keep the build context small and avoid shipping host-specific artifacts.
+
+# Git metadata
+.git
+.gitignore
+
+# Host-compiled binary (wrong architecture for the Linux image; the image
+# rebuilds it anyway during docker build).
+simulator
+
+# Python caches
+**/__pycache__
+*.pyc
+
+# Large design assets not needed at runtime
+*.png
