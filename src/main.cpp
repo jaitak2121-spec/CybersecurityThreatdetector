@@ -16,6 +16,7 @@
 #include "Incident.h"
 #include "SecurityLog.h"
 #include "SecurityReport.h"
+#include "ExceptionHandlingDemo.h"
 
 using namespace std;
 
@@ -528,6 +529,7 @@ int main()
     cout << " operations were performed." << endl;
     cout << "==============================================" << endl;
     TypeCastingDemo::runTypeCastingDemo();
+    ExceptionHandlingDemo::runExceptionHandling();
 
     return 0;
 }
