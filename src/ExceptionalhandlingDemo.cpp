@@ -139,13 +139,7 @@ void runExceptionHandlingDemo() {
              << ex.what() << '\n';
     }
 
-    // F. C++ LANGUAGE NOTES
-    cout << "\n6. C++ LANGUAGE NOTES\n";
-    cout << "C++ uses throw to raise exceptions.\n";
-    cout << "C++ uses catch to handle exceptions.\n";
-    cout << "C++ has no Java-style throws declaration.\n";
-    cout << "C++ has no built-in finally block; RAII provides cleanup.\n";
-    cout << "noexcept specifies that a function is non-throwing.\n";
+   
 
     cout << "\n============================================\n";
     cout << " END OF EXCEPTION HANDLING DEMO\n";
