@@ -212,15 +212,19 @@
         <tbody>
           <tr><td>Virtual base / virtual inheritance</td><td><code>SecurityEvent : virtual public EventInfo</code></td></tr>
           <tr><td>Virtual function + overriding</td><td><code>displayEvent()</code> in SecurityEvent / LoginEvent / NetworkEvent</td></tr>
-          <tr><td>Function overloading</td><td><code>ThreatDetector::detectThreat()</code> ×3 — workflow section 2</td></tr>
-          <tr><td>Operator overloading + friend</td><td><code>operator&lt;&lt;</code>, <code>operator&gt;</code> on Threat — section 4</td></tr>
-          <tr><td>Nested class</td><td><code>Threat::ThreatLevel</code>, <code>SecurityLog::LogEntry</code> — sections 4–5</td></tr>
-          <tr><td>Static variable + function</td><td><code>Threat::getThreatCount()</code>, Alert, SecurityLog — section 4</td></tr>
+          <tr><td>Function overloading</td><td><code>ThreatDetector::detectThreat()</code> ×3 — workflow section 3</td></tr>
+          <tr><td>Operator overloading + friend</td><td><code>operator&lt;&lt;</code>, <code>operator&gt;</code> on Threat — section 5</td></tr>
+          <tr><td>Nested class</td><td><code>Threat::ThreatLevel</code>, <code>SecurityLog::LogEntry</code> — sections 5–6</td></tr>
+          <tr><td>Static variable + function</td><td><code>Threat::getThreatCount()</code>, Alert, SecurityLog — section 5</td></tr>
           <tr><td>this pointer</td><td>LoginEvent constructor and <code>Threat::updateStatus()</code></td></tr>
-          <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> and <code>dynamic_cast&lt;LoginEvent*&gt;</code> — section 4</td></tr>
-          <tr><td>Object slicing</td><td>Base copy compared with virtual <code>clone()</code> — section 4</td></tr>
+          <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> and <code>dynamic_cast&lt;LoginEvent*&gt;</code> — section 5</td></tr>
+          <tr><td>Object slicing</td><td>Base copy compared with virtual <code>clone()</code> — section 5</td></tr>
           <tr><td>Type conversion</td><td><code>NumericSeverity</code> and <code>SecurityEventSummary</code> use real event data — section 1</td></tr>
           <tr><td>Custom exceptions + RAII</td><td>Invalid severity is rejected during event construction — section 1</td></tr>
+          <tr><td>Creating threads</td><td><code>EventMonitoringThread</code> and a <code>Thread</code> wrapping <code>EventMonitoringTask</code> — section 2</td></tr>
+          <tr><td>Extending Thread / Runnable</td><td>One worker inherits <code>Thread</code>; the other implements <code>Runnable</code></td></tr>
+          <tr><td>Thread lifecycle and methods</td><td><code>NEW → RUNNABLE → RUNNING ↔ TIMED_WAITING → TERMINATED</code>; <code>start/run/sleep/join/yield</code></td></tr>
+          <tr><td>Thread synchronization</td><td><code>ThreadSafeEventMetrics</code> uses <code>mutex</code> and <code>lock_guard</code></td></tr>
           <tr><td>final keyword</td><td><code>class NetworkEvent final</code></td></tr>
         </tbody>
       </table>
@@ -235,6 +239,7 @@
 <script>
   const STEPS = [
     { ic: "📡", t: "Events" },
+    { ic: "🧵", t: "Threads" },
     { ic: "📋", t: "Rules" },
     { ic: "⚠️", t: "Threats" },
     { ic: "🔔", t: "Alert" },

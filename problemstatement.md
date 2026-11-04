@@ -9,7 +9,8 @@ events. Invalid events are rejected with custom exceptions. Valid events are
 evaluated by detection rules, converted into threat records, and grouped into
 an alert and incident when a suspicious pattern is found. Evidence is attached,
 response actions are simulated, and all important results are logged and
-reported.
+reported. Before detection, two concurrent monitoring workers process separate
+event ranges and safely combine their metrics using synchronization.
 
 The system is educational only. Blocking, locking, isolating, and resetting are
 represented by status changes and console messages; no live security action is

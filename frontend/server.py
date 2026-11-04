@@ -61,7 +61,7 @@ def build():
     Compile the project with g++ (C++17).
     Returns (ok: bool, log: str).
     """
-    cmd = ["g++", "-std=c++17", "-Wall", "-o", BINARY] + source_files()
+    cmd = ["g++", "-std=c++17", "-Wall", "-pthread", "-o", BINARY] + source_files()
     try:
         proc = subprocess.run(
             cmd,

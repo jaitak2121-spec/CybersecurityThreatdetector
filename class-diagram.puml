@@ -143,6 +143,48 @@ package "Validation and conversion" {
   class InvalidEventException
 }
 
+package "Multithreading" {
+  interface Runnable {
+    + run(): void
+  }
+  class Thread {
+    - worker: std::thread
+    - target: Runnable*
+    - state: State
+    + start(): void
+    + run(): void
+    + join(): void
+    {static} + sleep(milliseconds: uint): void
+    {static} + yield(): void
+    + getState(): State
+  }
+  enum "Thread::State" as ThreadState {
+    NEW
+    RUNNABLE
+    RUNNING
+    TIMED_WAITING
+    TERMINATED
+  }
+  class "EventMonitoringThread <<final>>" as EventMonitoringThread {
+    - events: vector<SecurityEvent*>
+    - beginIndex: size_t
+    - endIndex: size_t
+    + run(): void
+  }
+  class "EventMonitoringTask <<final>>" as EventMonitoringTask {
+    - events: vector<SecurityEvent*>
+    - beginIndex: size_t
+    - endIndex: size_t
+    + run(): void
+  }
+  class ThreadSafeEventMetrics {
+    - metricsMutex: mutex
+    - processedEvents: int
+    - highSeverityEvents: int
+    + record(event: SecurityEvent): void
+  }
+}
+
 EventInfo <|-- SecurityEvent : virtual inheritance
 SecurityEvent <|-- LoginEvent
 SecurityEvent <|-- NetworkEvent
@@ -173,4 +215,13 @@ SecurityEvent ..> InvalidEventException : may throw
 NumericSeverity ..> InvalidSeverityException : may throw
 SecurityEventSummary ..> SecurityEvent : converts from
 NumericSeverity ..> SecurityEvent : converts severity
+Runnable <|.. Thread
+Thread <|-- EventMonitoringThread : extends
+Runnable <|.. EventMonitoringTask : implements
+Thread o-- Runnable : optional target
+Thread *-- ThreadState
+EventMonitoringThread --> ThreadSafeEventMetrics : synchronized update
+EventMonitoringTask --> ThreadSafeEventMetrics : synchronized update
+EventMonitoringThread ..> SecurityEvent : reads range
+EventMonitoringTask ..> SecurityEvent : reads range
 @enduml

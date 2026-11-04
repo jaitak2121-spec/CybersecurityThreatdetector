@@ -4,6 +4,9 @@ actor "Event Source" as Source
 actor "Security Analyst" as Analyst
 participant SecurityEvent as Event
 participant "ExceptionHandling" as Validation
+participant "EventMonitoringThread\n(extends Thread)" as InheritedWorker
+participant "Thread + EventMonitoringTask\n(implements Runnable)" as RunnableWorker
+participant ThreadSafeEventMetrics as Metrics
 participant ThreatDetector as Detector
 participant DetectionRule as Rule
 participant Threat
@@ -23,6 +26,19 @@ alt invalid input
 else valid input
   Validation --> Event : accepted (RAII cleanup)
   Source -> Log : write EVENT
+  Source -> InheritedWorker : start()
+  Source -> RunnableWorker : start()
+  par extended Thread run()
+    InheritedWorker -> Metrics : record(first range) [mutex]
+    InheritedWorker -> InheritedWorker : yield(), sleep()
+  else Runnable run()
+    RunnableWorker -> Metrics : record(second range) [mutex]
+    RunnableWorker -> RunnableWorker : yield(), sleep()
+  end
+  Source -> InheritedWorker : join()
+  Source -> RunnableWorker : join()
+  Source -> Metrics : read synchronized totals
+  Source -> Log : write THREADING
   Source -> Detector : detectThreat(event)
   Detector -> Rule : matches(event)
   Rule --> Detector : true / false

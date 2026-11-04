@@ -19,6 +19,11 @@
 | `NumericSeverity` | Convert numeric severity to/from an object | `SecurityEvent`, exception hierarchy |
 | `SecurityEventSummary` | Create a compact view by class-to-class conversion | `SecurityEvent` |
 | Exception hierarchy | Reject invalid event data with specific error types | `SecurityEvent`, `NumericSeverity` |
+| `Runnable` | Define the `run()` contract for a task | `Thread`, `EventMonitoringTask` |
+| `Thread` | Manage lifecycle and expose `start`, `run`, `sleep`, `join`, and `yield` | `Runnable`, `EventMonitoringThread` |
+| `EventMonitoringThread` | Process one event range by extending `Thread` | `SecurityEvent`, `ThreadSafeEventMetrics` |
+| `EventMonitoringTask` | Process another range by implementing `Runnable` | `Thread`, `ThreadSafeEventMetrics` |
+| `ThreadSafeEventMetrics` | Synchronize shared event counters with a mutex | Both monitoring workers |
 
 Pointers held by `Incident` are non-owning links. `main.cpp` owns events with
 `std::unique_ptr` and keeps the scenario's other linked objects alive on the

@@ -6,6 +6,7 @@ flowchart LR
     subgraph SYSTEM["Cybersecurity Threat Detection & Incident Response Simulator"]
         VALIDATE(("Validate event"))
         PROCESS(("Process security events"))
+        THREADS(("Monitor events concurrently"))
         DETECT(("Detect and classify threat"))
         ALERT(("Generate alert"))
         INCIDENT(("Create incident"))
@@ -16,6 +17,7 @@ flowchart LR
         RULES(("Configure detection rules"))
 
         PROCESS -. "<<include>>" .-> VALIDATE
+        PROCESS -. "<<include>>" .-> THREADS
         PROCESS -. "<<include>>" .-> DETECT
         ALERT -. "<<extend>> when serious" .-> DETECT
         INCIDENT -. "<<extend>> after escalation" .-> ALERT

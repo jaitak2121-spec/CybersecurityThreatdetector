@@ -8,7 +8,7 @@ report. No real account, device, or network operation is performed.
 ## Build and run
 
 ```bash
-g++ -std=c++17 -Wall -Wextra -pedantic -o simulator src/*.cpp
+g++ -std=c++17 -Wall -Wextra -pedantic -pthread -o simulator src/*.cpp
 ./simulator
 ```
 
@@ -26,6 +26,7 @@ compiles and runs the same C++ program; it does not reimplement the model.
 ```text
 Device
   -> validated LoginEvent / NetworkEvent objects
+  -> two synchronized monitoring workers
   -> DetectionRule evaluation by ThreatDetector
   -> Threat and Alert
   -> Incident with Evidence
@@ -59,6 +60,7 @@ They are no longer stand-alone demonstrations at the end of `main()`:
 | Response | `Alert`, `Incident`, `Evidence`, `ResponseAction`, `Device` | Investigate and contain a simulated incident |
 | Audit | `SecurityLog`, `SecurityReport` | Record and summarize the run |
 | Validation/conversion | exception hierarchy, `NumericSeverity`, `SecurityEventSummary` | Validate and convert actual workflow data |
+| Multithreading | `Runnable`, `Thread`, `EventMonitoringThread`, `EventMonitoringTask`, `ThreadSafeEventMetrics` | Process event ranges concurrently and safely combine metrics |
 
 ## OOP concept map
 
@@ -82,6 +84,23 @@ They are no longer stand-alone demonstrations at the end of `main()`:
 | Templates | `printMetric<T>()` |
 | Exception handling | `try`, `throw`, derived/base `catch`, custom exceptions, RAII cleanup |
 | Constructors/destructors | All classes; virtual event destructors and smart-pointer ownership |
+| Multithreading | Two event-monitoring workers execute concurrently before detection |
+| Thread synchronization | `ThreadSafeEventMetrics::record()` protects shared counters with `std::mutex` and `std::lock_guard` |
+
+## Multithreading lab concept map
+
+| Required topic | Where and how it is implemented |
+|---|---|
+| Creating threads | Section 2 of `main.cpp` creates `inheritedWorker` and `runnableWorker` |
+| Extending `Thread` | `EventMonitoringThread : public Thread` overrides `run()` |
+| Implementing `Runnable` | `EventMonitoringTask : public Runnable` overrides `run()` and is passed to a `Thread` |
+| Thread life cycle | `Thread::State` moves through `NEW`, `RUNNABLE`, `RUNNING`, `TIMED_WAITING`, and `TERMINATED`; states are printed before `start()` and after `join()` |
+| `start()` | Creates the underlying `std::thread` and begins `threadEntry()` |
+| `run()` | Contains each worker's event-processing work |
+| `sleep()` | Pauses each worker briefly using `std::this_thread::sleep_for()` |
+| `join()` | Makes the main flow wait for both workers before using their metrics |
+| `yield()` | Gives another runnable worker an execution opportunity |
+| Synchronization | Both workers update one `ThreadSafeEventMetrics`; a mutex prevents data races |
 
 ## Project documents and diagrams
 
@@ -89,6 +108,7 @@ They are no longer stand-alone demonstrations at the end of `main()`:
 - [Noun analysis](noun-analysis.md)
 - [CRC cards](crc-cards.md)
 - [Use cases](use-cases.md)
+- [Complete concept implementation map](concept-implementation-map.md)
 - [Class diagram source](class-diagram.puml)
 - [Rendered class diagram](class-diagram.png)
 - [Object diagram source](object-diagram.puml)

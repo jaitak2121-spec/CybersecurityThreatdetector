@@ -27,7 +27,7 @@ COPY . /app
 # image build fails immediately (fast feedback), and the container then
 # starts quickly because the binary is already present.
 # ---------------------------------------------------------------------------
-RUN g++ -std=c++17 -O2 -Wall -o simulator src/*.cpp
+RUN g++ -std=c++17 -O2 -Wall -pthread -o simulator src/*.cpp
 
 # Render supplies the port to listen on via $PORT. Default to 10000 so the
 # image also works when run locally without that variable set.

@@ -15,6 +15,7 @@
 #include "SecurityLog.h"
 #include "SecurityReport.h"
 #include "ThreatDetector.h"
+#include "Threading.h"
 #include "TypeCasting.h"
 
 using namespace std;
@@ -116,7 +117,61 @@ int main()
     cout << "Converted severity value: " << severityValue << '\n';
     summary.display();
 
-    printSection("2. Configure rules and detect threats");
+    printSection("2. Multithreaded event monitoring");
+
+    ThreadSafeEventMetrics threadMetrics;
+    const size_t splitIndex = events.size() / 2;
+
+    // Style 1: create a worker by extending Thread.
+    EventMonitoringThread inheritedWorker(
+        events, 0, splitIndex, threadMetrics);
+
+    // Style 2: implement Runnable, then give that task to Thread.
+    EventMonitoringTask monitoringTask(
+        events, splitIndex, events.size(), threadMetrics);
+    Thread runnableWorker(monitoringTask);
+
+    cout << "Inherited worker state before start(): "
+         << Thread::stateName(inheritedWorker.getState()) << '\n';
+    cout << "Runnable worker state before start(): "
+         << Thread::stateName(runnableWorker.getState()) << '\n';
+
+    inheritedWorker.start();
+    runnableWorker.start();
+    cout << "Both workers started; run() is executing concurrently.\n";
+    Thread::sleep(1); // allow the workers to enter RUNNING/TIMED_WAITING
+    cout << "Inherited worker active state: "
+         << Thread::stateName(inheritedWorker.getState()) << '\n';
+    cout << "Runnable worker active state: "
+         << Thread::stateName(runnableWorker.getState()) << '\n';
+
+    inheritedWorker.join();
+    runnableWorker.join();
+    cout << "Inherited worker state after join(): "
+         << Thread::stateName(inheritedWorker.getState()) << '\n';
+    cout << "Runnable worker state after join(): "
+         << Thread::stateName(runnableWorker.getState()) << '\n';
+
+    TypeCasting::printMetric(
+        "Synchronized events processed",
+        threadMetrics.getProcessedEvents());
+    TypeCasting::printMetric(
+        "Synchronized high-severity events",
+        threadMetrics.getHighSeverityEvents());
+    TypeCasting::printMetric(
+        "Login events", threadMetrics.getLoginEvents());
+    TypeCasting::printMetric(
+        "Network events", threadMetrics.getNetworkEvents());
+
+    securityLog.writeLogEntry(
+        "2026-08-25 10:16:08", "THREADING",
+        "Two workers processed "
+            + to_string(threadMetrics.getProcessedEvents())
+            + " events using synchronized metrics",
+        "EventMonitor"
+    );
+
+    printSection("3. Configure rules and detect threats");
     ThreatDetector detector;
     detector.addRule(DetectionRule(
         "RULE-AUTH-005", "Failed login", "FAILED_LOGIN", 4, true));
@@ -150,7 +205,7 @@ int main()
         "NETWORK_EVENT", 4, "203.0.113.20"); // overload 3: raw fields
     threats.push_back(directDetection);
 
-    printSection("3. Alert, investigate, and respond");
+    printSection("4. Alert, investigate, and respond");
     Alert alert(
         "ALT-9042", "2026-08-25 10:16:40", bruteForce.getSeverity(),
         "Repeated failed logins from " + bruteForce.getSourceIp()
@@ -205,7 +260,7 @@ int main()
         "Created " + incident.getIncidentId(), "IncidentManager"
     );
 
-    printSection("4. Compact OOP concept check");
+    printSection("5. Compact OOP concept check");
 
     // Runtime polymorphism and pointer to a derived object.
     SecurityEvent* basePointer = events.front();
@@ -236,7 +291,7 @@ int main()
     // virtual destructors and NetworkEvent's final specifier in the headers.
     bruteForce.updateStatus("CONTAINED"); // uses this->status
 
-    printSection("5. Log, incident, and report");
+    printSection("6. Log, incident, and report");
     securityLog.printAll();
     incident.displayFullReport();
 

@@ -67,8 +67,24 @@ object "eventSummary : SecurityEventSummary" as summary {
   sourceIp = "203.0.113.19"
   severity = 4
 }
+object "inheritedWorker : EventMonitoringThread" as inheritedWorker {
+  state = "TERMINATED"
+  range = "0..1"
+}
+object "monitoringTask : EventMonitoringTask" as monitoringTask {
+  range = "2..4"
+}
+object "runnableWorker : Thread" as runnableWorker {
+  state = "TERMINATED"
+}
+object "threadMetrics : ThreadSafeEventMetrics" as metrics {
+  processedEvents = 5
+  highSeverityEvents = 4
+  loginEvents = 4
+  networkEvents = 1
+}
 object "audit : SecurityLog" as log {
-  entries = 17
+  entries = 18
 }
 object "dailyReport : SecurityReport" as report {
   reportId = "REP-2026-08-25"
@@ -91,6 +107,12 @@ incident o-- action
 action --> device : isolated
 login1 ..> severity : int -> object -> int
 login1 ..> summary : class conversion
+inheritedWorker ..> login1 : processed range
+inheritedWorker --> metrics : synchronized updates
+runnableWorker o-- monitoringTask : Runnable target
+monitoringTask ..> network : processed range
+monitoringTask --> metrics : synchronized updates
+metrics ..> detector : ready before detection
 log ..> incident : audited
 report ..> threat : summarized
 report ..> incident : summarized

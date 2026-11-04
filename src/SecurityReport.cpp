@@ -78,6 +78,10 @@ void SecurityReport::generateSummary(
          << log.countByType("EVENT") << endl;
     cout << "  DETECTION             : "
          << log.countByType("DETECTION") << endl;
+    cout << "  VALIDATION            : "
+         << log.countByType("VALIDATION") << endl;
+    cout << "  THREADING             : "
+         << log.countByType("THREADING") << endl;
     cout << "  ALERT                 : "
          << log.countByType("ALERT") << endl;
     cout << "  INCIDENT              : "
