@@ -1,218 +1,100 @@
 # Cybersecurity Threat Detection & Incident Response Simulator
 
-A **safe, simulated** cybersecurity monitoring system written in C++ for an
-object-oriented programming course. It models the full incident-response
-pipeline — from raw security events through detection, alerting, incident
-creation, investigation, simulated response, logging, and reporting.
+A safe C++17 simulation of a small security-monitoring pipeline. It validates
+events, applies detection rules, creates threats and alerts, investigates an
+incident, performs simulated responses, writes an audit log, and prints a
+report. No real account, device, or network operation is performed.
 
-> ⚠️ **This is a simulation only.** It performs **no** real hacking,
-> exploitation, network blocking, account locking, or any other live security
-> action. Every "response" simply updates a status string to model what a real
-> system would do.
-
----
-
-## Build
-
-Requires a C++17 compiler (g++ or clang++).
+## Build and run
 
 ```bash
-g++ -std=c++17 -Wall -Wextra -o simulator src/*.cpp
-```
-
-## Run
-
-```bash
+g++ -std=c++17 -Wall -Wextra -pedantic -o simulator src/*.cpp
 ./simulator
 ```
 
-The program runs one complete scenario end to end and prints each stage to the
-console.
-
----
-
-## Web frontend (for presenting)
-
-A small presentation frontend lives in [`frontend/`](frontend/). It is a viewer
-and launcher for the **real C++ program** — it compiles and runs `./simulator`
-and shows the output nicely in the browser. It uses only the Python standard
-library (no installs) and does **not** reimplement the simulation.
-
-Run it locally:
+For the presentation frontend:
 
 ```bash
 python3 frontend/server.py
 ```
 
-Then open **http://localhost:10000** and click **Run Simulation**.
-(The port defaults to `10000`, or the value of the `PORT` environment variable;
-pass a number to override, e.g. `python3 frontend/server.py 8000`.)
+Open <http://localhost:10000> and select **Run Simulation**. The frontend
+compiles and runs the same C++ program; it does not reimplement the model.
 
----
+## Simplified workflow
 
-## Deploy to Render (Docker)
-
-The project ships a root [`Dockerfile`](Dockerfile) that installs Python 3 and
-`g++`, compiles the C++ simulator inside a Linux container, and serves the
-frontend. The server binds `0.0.0.0` and listens on `$PORT` (Render sets this
-automatically; it defaults to `10000`).
-
-### 1. Test the image locally (optional, needs Docker)
-
-```bash
-docker build -t threat-sim .
-docker run --rm -p 10000:10000 threat-sim
+```text
+Device
+  -> validated LoginEvent / NetworkEvent objects
+  -> DetectionRule evaluation by ThreatDetector
+  -> Threat and Alert
+  -> Incident with Evidence
+  -> simulated ResponseAction objects
+  -> SecurityLog and SecurityReport
 ```
 
-Open **http://localhost:10000** and click **Run Simulation**.
+The example uses three failed logins from one source and one risky SSH event.
+An invalid severity and a missing event identity are also submitted and rejected
+before detection, exercising both derived and base exception handlers.
 
-### 2. Deploy on Render
+## How type conversion and exceptions are connected
 
-1. Push this repository to GitHub (handle Git yourself — this project is not
-   auto-committed).
-2. In the [Render dashboard](https://dashboard.render.com/): **New +** →
-   **Web Service**, then connect the GitHub repository.
-3. Render auto-detects the `Dockerfile`. Confirm these settings:
-   - **Runtime:** `Docker`
-   - **Instance type:** `Free` is fine for a student demo
-   - **Port / start command:** leave as default — Render provides `PORT` and the
-     Dockerfile's `CMD` starts the server; do not override them.
-4. Click **Create Web Service**. Render builds the image (this compiles the C++)
-   and starts the container.
-5. When the build finishes, open the `https://<your-app>.onrender.com` URL and
-   click **Run Simulation**.
+They are no longer stand-alone demonstrations at the end of `main()`:
 
-> Note: Render's free instances sleep when idle, so the first request after a
-> pause can take ~30–60 seconds to wake and respond. This is normal.
+- `SecurityEvent` calls `ExceptionHandling::validateEventInput()` during
+  construction. Invalid input throws a custom `SecurityException` subtype.
+- An RAII validation guard performs cleanup on both the normal and exception
+  paths (the C++ equivalent of `finally`).
+- `NumericSeverity` converts a real event severity from `int` to a class and
+  back to `int`.
+- `SecurityEventSummary` converts a real `SecurityEvent` into a compact summary.
+- `printMetric<T>()` prints report metrics of several types.
 
-### Security note
+## Class structure
 
-The HTTP server exposes a strict allow-list of routes only (`/`, `/index.html`,
-`/api/run`). No part of any request is passed to a shell or used to build a
-command: `/api/run` always runs the same fixed binary with no arguments and
-`shell=False`, so arbitrary command execution is not possible.
+| Area | Classes | Purpose |
+|---|---|---|
+| Events | `EventInfo`, `SecurityEvent`, `LoginEvent`, `NetworkEvent` | Common event data and polymorphic event types |
+| Detection | `DetectionRule`, `ThreatDetector`, `Threat` | Match events, find patterns, classify risk |
+| Response | `Alert`, `Incident`, `Evidence`, `ResponseAction`, `Device` | Investigate and contain a simulated incident |
+| Audit | `SecurityLog`, `SecurityReport` | Record and summarize the run |
+| Validation/conversion | exception hierarchy, `NumericSeverity`, `SecurityEventSummary` | Validate and convert actual workflow data |
 
----
+## OOP concept map
 
+| Concept | Implementation |
+|---|---|
+| Encapsulation and abstraction | Private fields and small public operations on all domain classes |
+| Inheritance | `LoginEvent` and `NetworkEvent` derive from `SecurityEvent` |
+| Virtual inheritance | `SecurityEvent : virtual public EventInfo` |
+| Runtime polymorphism / overriding | `displayEvent()` through `SecurityEvent*` |
+| Function overloading | Three `ThreatDetector::detectThreat()` signatures |
+| Operator overloading / friends | `operator<<` and `operator>` on domain objects |
+| Nested classes | `Threat::ThreatLevel`, `SecurityLog::LogEntry` |
+| Static data/functions | Threat, alert, incident, and log counters |
+| `this` pointer | `LoginEvent` construction and `Threat::updateStatus()` |
+| Object pointers / derived pointers | Polymorphic event view and `dynamic_cast<LoginEvent*>` |
+| Object slicing | Base copy compared with virtual `clone()` |
+| `final` | `NetworkEvent final` |
+| Basic-to-class conversion | `int -> NumericSeverity` |
+| Class-to-basic conversion | `NumericSeverity -> int` |
+| Class-to-class conversion | `SecurityEvent -> SecurityEventSummary` |
+| Templates | `printMetric<T>()` |
+| Exception handling | `try`, `throw`, derived/base `catch`, custom exceptions, RAII cleanup |
+| Constructors/destructors | All classes; virtual event destructors and smart-pointer ownership |
 
-## What the simulator does (the workflow)
+## Project documents and diagrams
 
-It reproduces the brute-force scenario from the project's object diagram:
+- [Problem statement](problemstatement.md)
+- [Noun analysis](noun-analysis.md)
+- [CRC cards](crc-cards.md)
+- [Use cases](use-cases.md)
+- [Class diagram source](class-diagram.puml)
+- [Rendered class diagram](class-diagram.png)
+- [Object diagram source](object-diagram.puml)
+- [Rendered object diagram](object-diagram.png)
+- [Sequence diagram source](sequence-diagram.puml)
+- [Rendered sequence diagram](sequence-diagram.png)
+- [Use-case diagram source](usercasediagram.mmd)
 
-```
-Device generates Security Events  (5 failed logins + 1 network event)
-        │
-        ▼
-Detection Rules evaluate each event      (DetectionRule)
-        │
-        ▼
-Threats are detected & risk-classified   (ThreatDetector, Threat::ThreatLevel)
-        │
-        ▼
-An Alert is raised for the serious threat (Alert)
-        │
-        ▼
-An Incident is created and the alert escalated (Incident, UC-02)
-        │
-        ▼
-Evidence is attached during investigation (Evidence, UC-01)
-        │
-        ▼
-Simulated Response Actions are executed   (ResponseAction, UC-03)
-   block source · lock account · isolate device · (one failing action)
-        │
-        ▼
-Every step is written to the Security Log (SecurityLog)
-        │
-        ▼
-A Security Report summarises the run      (SecurityReport)
-```
-
----
-
-## Source files
-
-| File | Class | Role |
-|------|-------|------|
-| `EventInfo.{h,cpp}` | `EventInfo` | Virtual base class; common event data (source IP) |
-| `SecurityEvent.{h,cpp}` | `SecurityEvent` | Base event; virtual `displayEvent()` |
-| `LoginEvent.{h,cpp}` | `LoginEvent` | Login event (derived) |
-| `NetworkEvent.{h,cpp}` | `NetworkEvent` | Network event (derived, `final`) |
-| `Threat.{h,cpp}` | `Threat` + nested `ThreatLevel` | A detected threat and its risk level |
-| `ThreatDetector.{h,cpp}` | `ThreatDetector` | Rule-based detection, overloaded `detectThreat()` |
-| `DetectionRule.{h,cpp}` | `DetectionRule` | A single detection condition |
-| `Alert.{h,cpp}` | `Alert` | Warning raised by a triggered rule |
-| `Incident.{h,cpp}` | `Incident` | Groups alerts, evidence, actions |
-| `Evidence.{h,cpp}` | `Evidence` | Investigation artifact |
-| `ResponseAction.{h,cpp}` | `ResponseAction` | Simulated response |
-| `Device.{h,cpp}` | `Device` | Affected device; simulated `isolate()` |
-| `SecurityLog.{h,cpp}` | `SecurityLog` + nested `LogEntry` | Audit trail |
-| `SecurityReport.{h,cpp}` | `SecurityReport` | End-of-run summary |
-| `main.cpp` | — | Drives the full scenario + OOP demos |
-
----
-
-## OOP concept crib sheet (for the viva)
-
-Every required concept, with exactly where to point:
-
-| OOP concept | Where it lives | What to show |
-|-------------|----------------|--------------|
-| **Encapsulation** | every class | private data + public getters |
-| **Abstraction** | `Device::isolate()`, `ResponseAction::execute()` | one call hides the detail |
-| **Inheritance** | `SecurityEvent` → `LoginEvent`, `NetworkEvent` | `: public SecurityEvent` |
-| **Virtual base / virtual inheritance** | `SecurityEvent : virtual public EventInfo` | `SecurityEvent.h` line with `virtual` |
-| **Virtual function (polymorphism)** | `SecurityEvent::displayEvent()` overridden | STEP 11b — same `->displayEvent()` call, two outputs |
-| **Function overriding** | `LoginEvent`/`NetworkEvent` `displayEvent() ... override` | the `override` keyword |
-| **Function overloading** | `ThreatDetector::detectThreat()` ×3 | STEP 5 — three different parameter lists |
-| **Operator overloading** | `operator<<` and `operator>` for `Threat` | STEP 6 — `cout << threat`, `threat1 > threat2` |
-| **Friend function** | `operator<<` on `Threat`, `Alert`, `Evidence`, `Incident`, `ResponseAction` | STEP 11h |
-| **Nested class** | `Threat::ThreatLevel`, `SecurityLog::LogEntry` | STEP 11e |
-| **Static variable** | `Threat::threatCount`, `Alert::alertCount`, `SecurityLog::logCount`, `Incident::incidentCount` | STEP 11d |
-| **Static function** | `Threat::getThreatCount()` etc. | STEP 11d — called without an object |
-| **`this` pointer** | `LoginEvent` ctor (`this->username`), `Threat::updateStatus()` | STEP 11f |
-| **Pointer to objects** | `SecurityEvent* securityEventPtr = &loginExample;` | STEP 11a |
-| **Pointer to derived class** | `LoginEvent* loginPtr = &loginExample;` + `dynamic_cast` in `DetectionRule`/`ThreatDetector` | STEP 11a |
-| **Object slicing** | `SecurityEvent slicedEvent = loginExample;` | STEP 11c — derived data lost; `clone()` avoids it |
-| **`final` keyword** | `class NetworkEvent final : public SecurityEvent` | STEP 11g |
-| **Constructors / destructors** | all classes; virtual `~EventInfo`/`~SecurityEvent` | base pointers delete safely |
-
----
-
-## Implementation notes
-
-- **Simplified types vs the UML.** The design documents (`class-diagram.puml`,
-  CRC cards) use conceptual types such as `String`, `DateTime`, and
-  `Map<String,Integer>`. The C++ implementation uses standard
-  `std::string`, `int`, `bool`, and `std::vector` so the code stays readable
-  for a first-year OOP student. Timestamps are plain strings.
-- **Terminology preserved.** All class names and the pipeline terminology match
-  the original noun analysis, CRC cards, and class/object diagrams
-  (SecurityEvent, Threat, DetectionRule, Alert, Incident, Evidence,
-  ResponseAction, Device, SecurityLog, SecurityReport).
-- **Use cases covered.** UC-01 (investigate / attach evidence / false-positive
-  path), UC-02 (create incident, associate alert), and UC-03 (respond, with a
-  deliberate failing action to show the response-failure flow).
-- **Safety.** `Device::isolate()` and every `ResponseAction` type only change
-  status/outcome strings and print a `[SIMULATION]` line. No real system call,
-  network, or account operation is performed anywhere.
-
----
-
-## Example output (abridged)
-
-```
-STEP 4: Detect Threats
-  Rule triggered: Failed Login (severity >= 4)   (×5)
-  Rule triggered: Connection to risky port (severity >= 4)
-Checking for brute-force pattern from 203.0.113.19 (threshold 5)...
-  5 failed logins detected - brute-force pattern confirmed.
-
-STEP 10: Respond to Incident (SIMULATED)
-  [SIMULATION] Executing BLOCK_SOURCE on '203.0.113.19'
-  [SIMULATION] Device DEV-SRV-04 has been marked ISOLATED.
-
-STEP 13: Security Report
-  Threats detected: 9   HIGH: 8   Incidents: 1   Log entries: 23
-  System status: HIGH-risk activity detected.
-```
+The Dockerfile builds the simulator and serves the frontend for deployment.

@@ -212,14 +212,16 @@
         <tbody>
           <tr><td>Virtual base / virtual inheritance</td><td><code>SecurityEvent : virtual public EventInfo</code></td></tr>
           <tr><td>Virtual function + overriding</td><td><code>displayEvent()</code> in SecurityEvent / LoginEvent / NetworkEvent</td></tr>
-          <tr><td>Function overloading</td><td><code>ThreatDetector::detectThreat()</code> ×3 — Step 5</td></tr>
-          <tr><td>Operator overloading + friend</td><td><code>operator&lt;&lt;</code>, <code>operator&gt;</code> on Threat — Step 6</td></tr>
-          <tr><td>Nested class</td><td><code>Threat::ThreatLevel</code>, <code>SecurityLog::LogEntry</code> — Step 11e</td></tr>
-          <tr><td>Static variable + function</td><td><code>Threat::getThreatCount()</code>, Alert, SecurityLog — Step 11d</td></tr>
-          <tr><td>this pointer</td><td>LoginEvent ctor, <code>Threat::updateStatus()</code> — Step 11f</td></tr>
-          <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> → LoginEvent/NetworkEvent — Step 11a</td></tr>
-          <tr><td>Object slicing</td><td><code>SecurityEvent s = loginExample;</code> vs <code>clone()</code> — Step 11c</td></tr>
-          <tr><td>final keyword</td><td><code>class NetworkEvent final</code> — Step 11g</td></tr>
+          <tr><td>Function overloading</td><td><code>ThreatDetector::detectThreat()</code> ×3 — workflow section 2</td></tr>
+          <tr><td>Operator overloading + friend</td><td><code>operator&lt;&lt;</code>, <code>operator&gt;</code> on Threat — section 4</td></tr>
+          <tr><td>Nested class</td><td><code>Threat::ThreatLevel</code>, <code>SecurityLog::LogEntry</code> — sections 4–5</td></tr>
+          <tr><td>Static variable + function</td><td><code>Threat::getThreatCount()</code>, Alert, SecurityLog — section 4</td></tr>
+          <tr><td>this pointer</td><td>LoginEvent constructor and <code>Threat::updateStatus()</code></td></tr>
+          <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> and <code>dynamic_cast&lt;LoginEvent*&gt;</code> — section 4</td></tr>
+          <tr><td>Object slicing</td><td>Base copy compared with virtual <code>clone()</code> — section 4</td></tr>
+          <tr><td>Type conversion</td><td><code>NumericSeverity</code> and <code>SecurityEventSummary</code> use real event data — section 1</td></tr>
+          <tr><td>Custom exceptions + RAII</td><td>Invalid severity is rejected during event construction — section 1</td></tr>
+          <tr><td>final keyword</td><td><code>class NetworkEvent final</code></td></tr>
         </tbody>
       </table>
     </details>
@@ -249,7 +251,7 @@
     const el = document.createElement("div");
     el.className = "step";
     el.id = "step-" + i;
-    el.innerHTML = `<div class="ic">${s.ic}</div><div class="n">Step ${i + 1}</div><div class="t">${s.t}</div>`;
+    el.innerHTML = `<div class="ic">${s.ic}</div><div class="n">Stage ${i + 1}</div><div class="t">${s.t}</div>`;
     pipeline.appendChild(el);
   });
 
@@ -273,7 +275,7 @@
     return "";
   }
 
-  // Split raw console text into { title, body } sections on the STEP banners.
+  // Split raw console text into { title, body } sections on title banners.
   function parseSections(text) {
     const lines = text.split("\n");
     const sections = [];

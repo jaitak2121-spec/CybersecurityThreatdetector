@@ -1,112 +1,104 @@
 @startuml object-diagram
-skinparam style strictuml
-hide empty members
+!pragma layout smetana
+skinparam objectAttributeIconSize 0
+title Object Diagram - Executed Brute-Force Scenario
 
-title Object Diagram - Concrete Scenario: Brute-Force Incident Response
-
-object "webServer01 : Device" as dev1 {
+object "authServer : Device" as device {
   deviceId = "DEV-SRV-04"
-  deviceName = "Auth-Portal-Server"
-  ipAddress = "192.168.10.45"
-  osType = "Ubuntu 22.04 LTS"
   status = "ISOLATED"
 }
-
-object "failedLoginEvent : SecurityEvent" as ev1 {
-  eventId = "EVT-8821"
-  eventType = "AUTH_FAILURE"
-  timestamp = "2026-08-18T10:14:02Z"
+object "login1 : LoginEvent" as login1 {
+  eventId = "EVT-8801"
   sourceIp = "203.0.113.19"
-  rawData = "Failed password for user admin from 203.0.113.19 port 49152 ssh2"
-  severity = "HIGH"
-  status = "PROCESSED"
+  severity = 4
+  loginSuccessful = false
 }
-
-object "bruteForceRule : DetectionRule" as rule1 {
+object "login2 : LoginEvent" as login2 {
+  eventId = "EVT-8802"
+  sourceIp = "203.0.113.19"
+  severity = 4
+  loginSuccessful = false
+}
+object "login3 : LoginEvent" as login3 {
+  eventId = "EVT-8803"
+  sourceIp = "203.0.113.19"
+  severity = 4
+  loginSuccessful = false
+}
+object "sshEvent : NetworkEvent" as network {
+  eventId = "EVT-8805"
+  destinationPort = 22
+  protocol = "TCP"
+}
+object "failedLoginRule : DetectionRule" as rule {
   ruleId = "RULE-AUTH-005"
-  ruleName = "SSH/Web Brute Force Threshold Exceeded"
-  conditionPattern = "count(AUTH_FAILURE, sourceIp) > 5 within 60s"
-  severityThreshold = "HIGH"
-  isEnabled = true
+  conditionType = "FAILED_LOGIN"
+  severityThreshold = 4
 }
-
-object "sshBruteForceThreat : Threat" as threat1 {
-  threatId = "THREAT-2026-092"
+object "detector : ThreatDetector" as detector
+object "bruteForce : Threat" as threat {
+  threatId = "THREAT-6"
   threatType = "Credential Access - Brute Force"
-  severity = "CRITICAL"
-  source = "203.0.113.19"
-  status = "ACTIVE"
-}
-
-object "authAnomalyAlert : Alert" as alert1 {
-  alertId = "ALT-9042"
-  timestamp = "2026-08-18T10:14:05Z"
-  severity = "HIGH"
-  status = "ESCALATED"
-  description = "Excessive failed logins detected on Auth-Portal-Server from 203.0.113.19"
-}
-
-object "activeIncident : Incident" as inc1 {
-  incidentId = "INC-2026-0044"
-  title = "Brute Force Attack on Internal Auth Portal"
-  severity = "CRITICAL"
+  severity = 4
   status = "CONTAINED"
-  createdAt = "2026-08-18T10:15:30Z"
-  description = "Repeated credential stuffing attempts resulting in host-level isolation."
 }
-
-object "authLogEvidence : Evidence" as evd1 {
+object "alert : Alert" as alert {
+  alertId = "ALT-9042"
+  status = "ESCALATED"
+}
+object "incident : Incident" as incident {
+  incidentId = "INC-2026-0044"
+  status = "CONTAINED"
+}
+object "authEvidence : Evidence" as evidence {
   evidenceId = "EVD-3301"
   evidenceType = "AUTH_LOG_EXTRACT"
-  source = "/var/log/auth.log"
-  timestamp = "2026-08-18T10:16:00Z"
-  description = "Extracted 45 failed authentication attempts within 30 seconds"
-  payloadData = "SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 }
-
-object "isolateAction : ResponseAction" as act1 {
+object "isolate : ResponseAction" as action {
   actionId = "ACT-1092"
   actionType = "ISOLATE_DEVICE"
   status = "COMPLETED"
-  executedAt = "2026-08-18T10:18:12Z"
-  outcome = "Network interface disabled; device isolated successfully"
+}
+object "severity : NumericSeverity" as severity {
+  level = 4
+}
+object "eventSummary : SecurityEventSummary" as summary {
+  eventType = "LOGIN_EVENT"
+  sourceIp = "203.0.113.19"
+  severity = 4
+}
+object "audit : SecurityLog" as log {
+  entries = 17
+}
+object "dailyReport : SecurityReport" as report {
+  reportId = "REP-2026-08-25"
+  periodCovered = "2026-08-25"
 }
 
-object "actionAuditLog : SecurityLog" as log1 {
-  logId = "LOG-77492"
-  timestamp = "2026-08-18T10:18:13Z"
-  eventType = "RESPONSE_EXECUTION"
-  message = "ResponseAction ACT-1092 (ISOLATE_DEVICE) successfully applied to DEV-SRV-04"
-  sourceComponent = "IncidentResponseModule"
-}
+device -- login1 : generated
+device -- login2 : generated
+device -- login3 : generated
+device -- network : generated
+detector *-- rule : configured rule
+detector ..> login1 : analyzed
+detector ..> login2 : analyzed
+detector ..> login3 : analyzed
+detector ..> threat : created from pattern
+threat -- alert : raised
+incident o-- alert
+incident o-- evidence
+incident o-- action
+action --> device : isolated
+login1 ..> severity : int -> object -> int
+login1 ..> summary : class conversion
+log ..> incident : audited
+report ..> threat : summarized
+report ..> incident : summarized
+report ..> log : counted
 
-object "dailySecuritySummary : SecurityReport" as rep1 {
-  reportId = "REP-2026-08-18"
-  generatedAt = "2026-08-18T23:00:00Z"
-  periodCovered = "2026-08-18"
-  summary = "1 Critical incident contained, 1 host isolated, 0 data exfiltration events"
-  threatLevelDistribution = "{'CRITICAL': 1, 'HIGH': 3, 'LOW': 12}"
-}
-
-' --- Links with roles/labels ---
-
-dev1 -- ev1 : generated >
-rule1 ..> ev1 : evaluated
-rule1 ..> alert1 : generated
-ev1 -- threat1 : indicates >
-ev1 -- alert1 : triggered >
-threat1 -- alert1 : identified in >
-
-alert1 -- inc1 : escalated to >
-threat1 -- inc1 : associated with >
-inc1 -- dev1 : affected device >
-
-inc1 *-- evd1 : contains >
-inc1 o-- act1 : executed >
-act1 --> dev1 : isolated >
-
-log1 ..> act1 : audited
-rep1 ..> inc1 : summarized in
-rep1 ..> threat1 : summarized in
-
+note right of login3
+  EVT-BAD with severity 9 and an event
+  with missing identity are rejected
+  before entering this graph.
+end note
 @enduml

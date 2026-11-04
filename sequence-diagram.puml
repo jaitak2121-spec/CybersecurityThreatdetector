@@ -1,0 +1,45 @@
+@startuml sequence-diagram
+title Sequence Diagram - Validation, Detection, and Response
+actor "Event Source" as Source
+actor "Security Analyst" as Analyst
+participant SecurityEvent as Event
+participant "ExceptionHandling" as Validation
+participant ThreatDetector as Detector
+participant DetectionRule as Rule
+participant Threat
+participant Alert
+participant Incident
+participant ResponseAction as Action
+participant Device
+participant SecurityLog as Log
+participant SecurityReport as Report
+
+Source -> Event : construct(id, type, severity)
+Event -> Validation : validateEventInput(...)
+alt invalid input
+  Validation --> Event : throw SecurityException subtype
+  Event --> Source : reject event
+  Source -> Log : write VALIDATION failure
+else valid input
+  Validation --> Event : accepted (RAII cleanup)
+  Source -> Log : write EVENT
+  Source -> Detector : detectThreat(event)
+  Detector -> Rule : matches(event)
+  Rule --> Detector : true / false
+  Detector -> Threat : create result
+  Detector -> Log : write DETECTION
+end
+
+Detector -> Threat : detectThreat(events, ip, threshold)
+Threat -> Alert : raise serious alert
+Analyst -> Incident : create and addAlert(alert)
+Analyst -> Incident : addEvidence(evidence)
+Analyst -> Incident : executeResponse(action, device)
+Incident -> Action : execute(device)
+Action -> Device : isolate() [simulated]
+Action --> Incident : COMPLETED / FAILED
+Incident -> Log : write RESPONSE
+Analyst -> Report : generateSummary(...)
+Report -> Log : countByType(...)
+Report --> Analyst : console summary
+@enduml

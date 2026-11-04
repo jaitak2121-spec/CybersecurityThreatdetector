@@ -1,149 +1,176 @@
 @startuml class-diagram
-skinparam classAttributeIconSize true
-skinparam style strictuml
+!pragma layout smetana
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
 hide empty members
+title Implemented Class Diagram - Cybersecurity Threat Detector
 
-title Domain Class Diagram - Cybersecurity Threat Detection & Incident Response Simulator
+package "Event model" {
+  class EventInfo {
+    # sourceIp: string
+    + getSourceIp(): string
+    + displayInfo(): void
+  }
 
-class Device {
-  - deviceId: String
-  - deviceName: String
-  - ipAddress: String
-  - osType: String
-  - status: String
-  + getDeviceId(): String
-  + getIpAddress(): String
-  + updateStatus(newStatus: String): void
-  + isolate(): void
+  class SecurityEvent {
+    - eventId: string
+    - eventType: string
+    - timestamp: string
+    - severity: int
+    # rawData: string
+    + getSeverity(): int
+    + displayEvent(): void
+    + clone(): SecurityEvent*
+  }
+
+  class LoginEvent {
+    - username: string
+    - loginSuccessful: bool
+    + isFailedLogin(): bool
+    + displayEvent(): void
+    + clone(): SecurityEvent*
+  }
+
+  class "NetworkEvent <<final>>" as NetworkEvent {
+    - destinationPort: int
+    - protocol: string
+    + getDestinationPort(): int
+    + displayEvent(): void
+    + clone(): SecurityEvent*
+  }
 }
 
-class SecurityEvent {
-  - eventId: String
-  - eventType: String
-  - timestamp: DateTime
-  - sourceIp: String
-  - rawData: String
-  - severity: String
-  - status: String
-  + getEventDetails(): String
-  + markProcessed(): void
+package "Detection" {
+  class DetectionRule {
+    - ruleId: string
+    - conditionType: string
+    - severityThreshold: int
+    - isEnabled: bool
+    + matches(event: SecurityEvent): bool
+  }
+
+  class ThreatDetector {
+    - rules: vector<DetectionRule>
+    + addRule(rule: DetectionRule): void
+    + detectThreat(event: SecurityEvent): Threat
+    + detectThreat(type: string, severity: int, ip: string): Threat
+    + detectThreat(events: vector<SecurityEvent*>, ip: string, threshold: int): Threat
+  }
+
+  class Threat {
+    - threatId: string
+    - threatType: string
+    - severity: int
+    - status: string
+    {static} - threatCount: int
+    + getLevel(): ThreatLevel
+    + updateStatus(status: string): void
+    {static} + getThreatCount(): int
+  }
+
+  class "Threat::ThreatLevel" as ThreatLevel {
+    - level: int
+    + describe(): string
+  }
 }
 
-class DetectionRule {
-  - ruleId: String
-  - ruleName: String
-  - conditionPattern: String
-  - severityThreshold: String
-  - isEnabled: Boolean
-  + evaluateEvent(event: SecurityEvent): Boolean
-  + triggerAlert(event: SecurityEvent): Alert
+package "Incident response" {
+  class Device {
+    - deviceId: string
+    - status: string
+    + isolate(): void
+  }
+  class Alert {
+    - alertId: string
+    - severity: int
+    - status: string
+    + markFalsePositive(reason: string): void
+  }
+  class Evidence {
+    - evidenceId: string
+    - evidenceType: string
+    - description: string
+  }
+  class ResponseAction {
+    - actionId: string
+    - actionType: string
+    - status: string
+    - outcome: string
+    + execute(device: Device): bool
+  }
+  class Incident {
+    - incidentId: string
+    - status: string
+    - alerts: vector<Alert*>
+    - evidenceList: vector<Evidence*>
+    - actions: vector<ResponseAction*>
+    + addAlert(alert: Alert*): void
+    + addEvidence(evidence: Evidence*): void
+    + executeResponse(action: ResponseAction*, device: Device): bool
+  }
 }
 
-class Threat {
-  - threatId: String
-  - threatType: String
-  - severity: String
-  - source: String
-  - status: String
-  + classifyRisk(): String
-  + updateStatus(status: String): void
+package "Audit" {
+  class SecurityLog {
+    - entries: vector<LogEntry>
+    + writeLogEntry(...): void
+    + countByType(type: string): int
+  }
+  class "SecurityLog::LogEntry" as LogEntry {
+    - timestamp: string
+    - eventType: string
+    - message: string
+  }
+  class SecurityReport {
+    + generateSummary(threats, alerts, incidents, log): void
+  }
 }
 
-class Alert {
-  - alertId: String
-  - timestamp: DateTime
-  - severity: String
-  - status: String
-  - description: String
-  + getAlertDetails(): String
-  + escalateToIncident(): Incident
-  + updateStatus(newStatus: String): void
-  + markFalsePositive(reason: String): void
+package "Validation and conversion" {
+  class NumericSeverity {
+    - level: int
+    + NumericSeverity(value: int)
+    + operator int(): int
+  }
+  class SecurityEventSummary {
+    - eventType: string
+    - sourceIp: string
+    - severity: int
+    + SecurityEventSummary(event: SecurityEvent)
+  }
+  class SecurityException
+  class InvalidSeverityException
+  class InvalidEventException
 }
 
-class Incident {
-  - incidentId: String
-  - title: String
-  - severity: String
-  - status: String
-  - createdAt: DateTime
-  - description: String
-  + addAlert(alert: Alert): void
-  + addEvidence(evidence: Evidence): void
-  + executeResponse(action: ResponseAction): void
-  + updateStatus(newStatus: String): void
-}
+EventInfo <|-- SecurityEvent : virtual inheritance
+SecurityEvent <|-- LoginEvent
+SecurityEvent <|-- NetworkEvent
+Threat *-- ThreatLevel
+SecurityLog *-- LogEntry
 
-class Evidence {
-  - evidenceId: String
-  - evidenceType: String
-  - source: String
-  - timestamp: DateTime
-  - description: String
-  - payloadData: String
-  + getEvidenceDetails(): String
-  + verifyIntegrity(): Boolean
-}
+ThreatDetector *-- "0..*" DetectionRule
+ThreatDetector ..> SecurityEvent : analyzes
+ThreatDetector ..> Threat : creates
+DetectionRule ..> LoginEvent : dynamic_cast
+DetectionRule ..> NetworkEvent : dynamic_cast
 
-class ResponseAction {
-  - actionId: String
-  - actionType: String
-  - status: String
-  - executedAt: DateTime
-  - outcome: String
-  + execute(targetDevice: Device): Boolean
-  + recordOutcome(result: String): void
-}
+Device "1" -- "0..*" SecurityEvent : source device
+Threat "1" -- "0..1" Alert : raises
+Incident "1" o-- "1..*" Alert
+Incident "1" o-- "0..*" Evidence
+Incident "1" o-- "0..*" ResponseAction
+ResponseAction --> Device : targets
+SecurityReport ..> Threat
+SecurityReport ..> Alert
+SecurityReport ..> Incident
+SecurityReport ..> SecurityLog
 
-class SecurityLog {
-  - logId: String
-  - timestamp: DateTime
-  - eventType: String
-  - message: String
-  - sourceComponent: String
-  + writeLogEntry(source: String, message: String): void
-  + queryLogs(filter: String): List<SecurityLog>
-}
-
-class SecurityReport {
-  - reportId: String
-  - generatedAt: DateTime
-  - periodCovered: String
-  - summary: String
-  - threatLevelDistribution: Map<String, Integer>
-  + generateSummary(): void
-  + exportReport(format: String): File
-}
-
-' --- Associations and Multiplicities ---
-
-Device "1" -- "0..*" SecurityEvent : generates >
-Device "0..*" -- "0..*" Incident : involved in >
-Device "1" <-- "0..*" ResponseAction : targets <
-
-DetectionRule "1..*" ..> "1" SecurityEvent : evaluates >
-DetectionRule "1" ..> "0..*" Alert : generates >
-
-SecurityEvent "1..*" -- "0..1" Threat : indicates >
-SecurityEvent "1" -- "0..1" Alert : triggers >
-SecurityEvent "0..*" -- "0..1" Incident : associated with >
-
-Threat "1" -- "0..*" Alert : identified by <
-Threat "0..1" -- "0..*" Incident : associated with <
-
-Alert "1..*" -- "0..1" Incident : escalates to >
-
-Incident "1" *-- "0..*" Evidence : contains >
-Incident "1" o-- "0..*" ResponseAction : executes >
-
-' System-wide Logging and Reporting Dependencies
-SecurityLog <.. SecurityEvent : logs
-SecurityLog <.. Alert : logs
-SecurityLog <.. Incident : logs
-SecurityLog <.. ResponseAction : logs
-
-SecurityReport ..> Incident : summarizes >
-SecurityReport ..> Threat : summarizes >
-SecurityReport ..> Alert : summarizes >
-
+SecurityException <|-- InvalidSeverityException
+SecurityException <|-- InvalidEventException
+SecurityEvent ..> InvalidSeverityException : may throw
+SecurityEvent ..> InvalidEventException : may throw
+NumericSeverity ..> InvalidSeverityException : may throw
+SecurityEventSummary ..> SecurityEvent : converts from
+NumericSeverity ..> SecurityEvent : converts severity
 @enduml

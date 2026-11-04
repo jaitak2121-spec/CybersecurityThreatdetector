@@ -5,7 +5,7 @@ Cybersecurity Threat Detection & Incident Response Simulator.
 
 What it does
 ------------
-- Serves a single web page (index.html) at http://localhost:8000
+- Serves a single web page (index.html) at http://localhost:10000
 - When you click "Run Simulation", it compiles the C++ project (only if
   needed) and runs the real ./simulator binary, then streams the console
   output back to the browser where it is shown nicely formatted.
@@ -16,7 +16,7 @@ existing C++ program so it is pleasant to present.
 
 Usage
 -----
-    python3 frontend/server.py            # then open http://localhost:8000
+    python3 frontend/server.py            # then open http://localhost:10000
     python3 frontend/server.py 9000       # use a different port
 
 This does not perform any real security action. The C++ program it runs is a

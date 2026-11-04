@@ -1,4 +1,5 @@
 #include "SecurityEvent.h"
+#include "ExceptionHandling.h"
 #include <iostream>
 
 using namespace std;
@@ -13,6 +14,7 @@ SecurityEvent::SecurityEvent(
 )
     : EventInfo(ip)          // <-- virtual base is constructed here
 {
+    ExceptionHandling::validateEventInput(id, type, sev);
     eventId = id;
     eventType = type;
     timestamp = time;
