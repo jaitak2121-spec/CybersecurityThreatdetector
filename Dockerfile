@@ -29,9 +29,15 @@ COPY . /app
 # ---------------------------------------------------------------------------
 RUN g++ -std=c++17 -O2 -Wall -pthread -o simulator src/*.cpp
 
+# Run the public service without root privileges.
+RUN useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
+USER appuser
+
 # Render supplies the port to listen on via $PORT. Default to 10000 so the
 # image also works when run locally without that variable set.
 ENV PORT=10000
+ENV PYTHONDONTWRITEBYTECODE=1
 EXPOSE 10000
 
 # Start the Python frontend. It serves index.html and, on /api/run,

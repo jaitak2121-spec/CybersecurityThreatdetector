@@ -1,5 +1,17 @@
 # Use Cases
 
+## UC-00 — Run a public simulation scenario
+
+**Actor:** Visitor or security analyst
+
+1. The visitor selects one of the predefined datasets or error paths.
+2. The public server validates the scenario name against its allow-list.
+3. The server runs the simulator with a time and concurrency limit.
+4. The frontend displays scenario-specific data, errors, log entries, and report totals.
+5. The frontend compares the new summary with the previous run in the same browser session.
+
+**Alternate:** Unknown scenarios return an error and never reach the executable.
+
 ## UC-01 — Process security events
 
 **Actor:** Event source

@@ -27,11 +27,32 @@ static void printSection(const string& title)
          << "========================================\n";
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    const string scenario = (argc > 1) ? argv[1] : "full-demo";
+    const bool validScenario =
+        scenario == "full-demo"
+        || scenario == "attack-only"
+        || scenario == "validation-errors"
+        || scenario == "response-failure"
+        || scenario == "high-volume";
+
+    if (!validScenario)
+    {
+        cerr << "Unknown scenario: " << scenario << '\n';
+        return 2;
+    }
+
+    const bool showValidationErrors =
+        scenario == "full-demo" || scenario == "validation-errors";
+    const bool showResponseFailure =
+        scenario == "full-demo" || scenario == "response-failure";
+    const int failedLoginCount = scenario == "high-volume" ? 6 : 3;
+
     cout << "==============================================\n"
          << " Cybersecurity Threat Detection & Response\n"
          << " (SAFE SIMULATION - no real actions performed)\n"
+         << " Scenario: " << scenario << "\n"
          << "==============================================\n";
 
     SecurityLog securityLog;
@@ -58,56 +79,58 @@ int main()
         ownedEvents.push_back(std::move(event));
     };
 
+    for (int i = 0; i < failedLoginCount; ++i)
+    {
+        const int seconds = 2 + i * 8;
+        const string secondText =
+            (seconds < 10 ? "0" : "") + to_string(seconds);
+        addEvent(make_unique<LoginEvent>(
+            "EVT-" + to_string(8801 + i),
+            "2026-08-25 10:14:" + secondText,
+            "203.0.113.19", 4, "admin", false));
+    }
     addEvent(make_unique<LoginEvent>(
-        "EVT-8801", "2026-08-25 10:14:02", "203.0.113.19", 4,
-        "admin", false));
-    addEvent(make_unique<LoginEvent>(
-        "EVT-8802", "2026-08-25 10:14:20", "203.0.113.19", 4,
-        "admin", false));
-    addEvent(make_unique<LoginEvent>(
-        "EVT-8803", "2026-08-25 10:14:39", "203.0.113.19", 4,
-        "admin", false));
-    addEvent(make_unique<LoginEvent>(
-        "EVT-8804", "2026-08-25 10:16:00", "198.51.100.7", 1,
+        "EVT-8890", "2026-08-25 10:16:00", "198.51.100.7", 1,
         "jsmith", true));
     addEvent(make_unique<NetworkEvent>(
-        "EVT-8805", "2026-08-25 10:15:40", "203.0.113.19", 4,
+        "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19", 4,
         22, "TCP"));
 
     // Exception handling is part of event admission, not a detached demo.
-    try
+    if (showValidationErrors)
     {
-        addEvent(make_unique<LoginEvent>(
-            "EVT-BAD", "2026-08-25 10:16:05", "203.0.113.20", 9,
-            "invalid", false));
-    }
-    catch (const ExceptionHandling::InvalidSeverityException& error)
-    {
-        cout << "Rejected invalid event: " << error.what() << '\n';
-        securityLog.writeLogEntry(
-            "2026-08-25 10:16:05", "VALIDATION", error.what(),
-            "EventCollector"
-        );
-    }
-    catch (const ExceptionHandling::SecurityException& error)
-    {
-        // Base fallback must follow the more-specific derived catch.
-        cout << "Rejected security event: " << error.what() << '\n';
-    }
+        try
+        {
+            addEvent(make_unique<LoginEvent>(
+                "EVT-BAD", "2026-08-25 10:16:05", "203.0.113.20", 9,
+                "invalid", false));
+        }
+        catch (const ExceptionHandling::InvalidSeverityException& error)
+        {
+            cout << "Rejected invalid event: " << error.what() << '\n';
+            securityLog.writeLogEntry(
+                "2026-08-25 10:16:05", "VALIDATION", error.what(),
+                "EventCollector"
+            );
+        }
+        catch (const ExceptionHandling::SecurityException& error)
+        {
+            cout << "Rejected security event: " << error.what() << '\n';
+        }
 
-    try
-    {
-        addEvent(make_unique<SecurityEvent>(
-            "", "", "2026-08-25 10:16:06", "203.0.113.21", 3));
-    }
-    catch (const ExceptionHandling::SecurityException& error)
-    {
-        // A base-class handler catches the derived InvalidEventException.
-        cout << "Rejected invalid event: " << error.what() << '\n';
-        securityLog.writeLogEntry(
-            "2026-08-25 10:16:06", "VALIDATION", error.what(),
-            "EventCollector"
-        );
+        try
+        {
+            addEvent(make_unique<SecurityEvent>(
+                "", "", "2026-08-25 10:16:06", "203.0.113.21", 3));
+        }
+        catch (const ExceptionHandling::SecurityException& error)
+        {
+            cout << "Rejected invalid event: " << error.what() << '\n';
+            securityLog.writeLogEntry(
+                "2026-08-25 10:16:06", "VALIDATION", error.what(),
+                "EventCollector"
+            );
+        }
     }
 
     // These conversions use an admitted SecurityEvent's real data.
@@ -213,7 +236,8 @@ int main()
     Incident incident(
         "INC-2026-0044", "Brute Force Attack on Auth Portal",
         bruteForce.getSeverity(), "2026-08-25 10:17:00",
-        "Three failed logins from one external source."
+        to_string(failedLoginCount)
+            + " failed logins from one external source."
     );
     alert.updateStatus("ESCALATED");
     incident.addAlert(&alert);
@@ -225,7 +249,8 @@ int main()
     Evidence authEvidence(
         "EVD-3301", "AUTH_LOG_EXTRACT", "/var/log/auth.log",
         "2026-08-25 10:18:00",
-        "Three failed authentication attempts in under one minute"
+        to_string(failedLoginCount)
+            + " failed authentication attempts in under one minute"
     );
     Evidence networkEvidence(
         "EVD-3302", "NETWORK_LOG", "Simulated firewall log",
@@ -240,12 +265,15 @@ int main()
     ResponseAction lockAction("ACT-1091", "LOCK_ACCOUNT", "admin");
     ResponseAction isolateAction(
         "ACT-1092", "ISOLATE_DEVICE", authServer.getDeviceId());
+    vector<ResponseAction*> actions = {
+        &blockAction, &lockAction, &isolateAction
+    };
     ResponseAction failedAction(
         "ACT-1093", "UNKNOWN_ACTION", "simulation-target");
-
-    vector<ResponseAction*> actions = {
-        &blockAction, &lockAction, &isolateAction, &failedAction
-    };
+    if (showResponseFailure)
+    {
+        actions.push_back(&failedAction);
+    }
     for (ResponseAction* action : actions)
     {
         incident.executeResponse(action, authServer);

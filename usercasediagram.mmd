@@ -1,10 +1,12 @@
 flowchart LR
     ES["Event Source"]
+    VISITOR["Public Visitor"]
     SA["Security Analyst"]
     ADMIN["System Administrator"]
 
     subgraph SYSTEM["Cybersecurity Threat Detection & Incident Response Simulator"]
         VALIDATE(("Validate event"))
+        SELECT(("Select safe scenario"))
         PROCESS(("Process security events"))
         THREADS(("Monitor events concurrently"))
         DETECT(("Detect and classify threat"))
@@ -17,6 +19,7 @@ flowchart LR
         RULES(("Configure detection rules"))
 
         PROCESS -. "<<include>>" .-> VALIDATE
+        SELECT -. "<<include>>" .-> PROCESS
         PROCESS -. "<<include>>" .-> THREADS
         PROCESS -. "<<include>>" .-> DETECT
         ALERT -. "<<extend>> when serious" .-> DETECT
@@ -27,6 +30,7 @@ flowchart LR
     end
 
     ES --- PROCESS
+    VISITOR --- SELECT
     SA --- ALERT
     SA --- INCIDENT
     SA --- INVESTIGATE

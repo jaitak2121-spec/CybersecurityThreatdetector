@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: cybersecurity-threat-detector
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: MAX_CONCURRENT_RUNS
+        value: "2"

@@ -20,6 +20,35 @@ python3 frontend/server.py
 
 Open <http://localhost:10000> and select **Run Simulation**. The frontend
 compiles and runs the same C++ program; it does not reimplement the model.
+Do not open `frontend/index.html` directly with a `file://` URL: that only
+previews the layout and has no simulator API behind it.
+
+The web UI offers five safe, allow-listed runs: a full demonstration, attack
+data without deliberate errors, validation errors, a failed response action,
+and a higher-volume attack dataset.
+After every successful run, the dashboard keeps the previous summary in the
+browser session and shows metric-by-metric changes for events, threats,
+critical threats, validation errors, failed actions, and log entries.
+
+## Public deployment
+
+The repository includes both a production Docker image and `render.yaml`.
+
+1. Push the repository to GitHub or GitLab.
+2. In Render, create a **Blueprint** and select the repository.
+3. Render reads `render.yaml`, builds the Dockerfile, checks `/healthz`, and
+   provides a public `onrender.com` URL.
+
+The service binds to Render's `$PORT`, runs as a non-root container user,
+accepts only predefined scenario names, limits concurrent simulator runs, and
+does not pass request content to a shell. Free Render services may sleep after
+an idle period, so the first visit can take longer to start.
+
+Run the deployment smoke check with:
+
+```bash
+python3 tests/smoke_test.py
+```
 
 ## Simplified workflow
 

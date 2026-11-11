@@ -7,8 +7,7 @@ What it does
 ------------
 - Serves a single web page (index.html) at http://localhost:10000
 - When you click "Run Simulation", it compiles the C++ project (only if
-  needed) and runs the real ./simulator binary, then streams the console
-  output back to the browser where it is shown nicely formatted.
+  needed), runs the real ./simulator binary, and returns its formatted output.
 
 It uses ONLY the Python standard library - no pip installs, no frameworks.
 Nothing about the simulation changes: this is just a viewer/launcher for the
@@ -28,7 +27,10 @@ import json
 import os
 import subprocess
 import sys
+import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 # ---------------------------------------------------------------------------
 # Paths: the project root is the folder ABOVE this frontend/ folder.
@@ -38,6 +40,17 @@ PROJECT_ROOT = os.path.dirname(FRONTEND_DIR)
 SRC_DIR = os.path.join(PROJECT_ROOT, "src")
 BINARY = os.path.join(PROJECT_ROOT, "simulator")
 INDEX_HTML = os.path.join(FRONTEND_DIR, "index.html")
+SCENARIOS = {
+    "full-demo": "Full demo (all data and errors)",
+    "attack-only": "Attack data (successful response)",
+    "validation-errors": "Invalid event data",
+    "response-failure": "Failed response action",
+    "high-volume": "High-volume attack data",
+}
+RUN_SLOTS = threading.BoundedSemaphore(
+    max(1, int(os.environ.get("MAX_CONCURRENT_RUNS", "2")))
+)
+BUILD_LOCK = threading.Lock()
 
 
 def source_files():
@@ -45,12 +58,17 @@ def source_files():
     return sorted(glob.glob(os.path.join(SRC_DIR, "*.cpp")))
 
 
+def dependency_files():
+    """Sources and headers that should trigger a rebuild."""
+    return source_files() + sorted(glob.glob(os.path.join(SRC_DIR, "*.h")))
+
+
 def needs_build():
     """True if the binary is missing or older than any source file."""
     if not os.path.exists(BINARY):
         return True
     bin_mtime = os.path.getmtime(BINARY)
-    for src in source_files():
+    for src in dependency_files():
         if os.path.getmtime(src) > bin_mtime:
             return True
     return False
@@ -83,49 +101,74 @@ def build():
     return proc.returncode == 0, log.strip()
 
 
-def run_simulator():
+def run_simulator(scenario):
     """
     Run the compiled simulator and capture its console output.
     Returns a dict ready to be sent back as JSON.
     """
-    built = False
-    if needs_build():
-        ok, log = build()
-        built = True
-        if not ok:
-            return {
-                "ok": False,
-                "stage": "build",
-                "built": True,
-                "buildLog": log,
-                "output": "",
-            }
-
-    try:
-        proc = subprocess.run(
-            [BINARY],
-            cwd=PROJECT_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except Exception as exc:  # noqa: BLE001 - report any run failure plainly
+    if not RUN_SLOTS.acquire(blocking=False):
         return {
             "ok": False,
-            "stage": "run",
-            "built": built,
-            "buildLog": "",
-            "output": f"Failed to run the simulator: {exc}",
+            "stage": "busy",
+            "status": 503,
+            "output": "The public simulator is busy. Please try again shortly.",
         }
 
-    return {
-        "ok": proc.returncode == 0,
-        "stage": "run",
-        "built": built,
-        "buildLog": "",
-        "output": (proc.stdout or "") + (proc.stderr or ""),
-        "exitCode": proc.returncode,
-    }
+    try:
+        built = False
+        with BUILD_LOCK:
+            if needs_build():
+                ok, log = build()
+                built = True
+                if not ok:
+                    return {
+                        "ok": False,
+                        "stage": "build",
+                        "status": 500,
+                        "built": True,
+                        "buildLog": log,
+                        "output": "",
+                    }
+
+        try:
+            started_at = time.monotonic()
+            proc = subprocess.run(
+                [BINARY, scenario],
+                cwd=PROJECT_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except subprocess.TimeoutExpired:
+            return {
+                "ok": False,
+                "stage": "timeout",
+                "status": 504,
+                "built": built,
+                "output": "The simulation exceeded the 30-second limit.",
+            }
+        except OSError as exc:
+            return {
+                "ok": False,
+                "stage": "run",
+                "status": 500,
+                "built": built,
+                "output": f"Failed to run the simulator: {exc}",
+            }
+
+        return {
+            "ok": proc.returncode == 0,
+            "stage": "run",
+            "status": 200 if proc.returncode == 0 else 500,
+            "scenario": scenario,
+            "built": built,
+            "buildLog": "",
+            "output": (proc.stdout or "") + (proc.stderr or ""),
+            "exitCode": proc.returncode,
+            "durationMs": round((time.monotonic() - started_at) * 1000),
+        }
+    finally:
+        RUN_SLOTS.release()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -139,17 +182,19 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(body)
 
     def do_GET(self):
         # SECURITY: this server exposes a STRICT allow-list of routes only.
-        # No part of the request (path, query string, headers or body) is
-        # ever passed to a shell or used to build a command line. The
-        # /api/run route always runs the SAME fixed binary with NO
-        # arguments and shell=False, so a client cannot influence what is
-        # executed - arbitrary command execution is not possible.
-        path = self.path.split("?", 1)[0]  # ignore any query string
+        # /api/run executes the same fixed binary with one exact value from
+        # SCENARIOS. No request content is evaluated by a shell or used as a
+        # command or filesystem path.
+        request = urlparse(self.path)
+        path = request.path
 
         if path in ("/", "/index.html"):
             try:
@@ -160,9 +205,30 @@ class Handler(BaseHTTPRequestHandler):
                            "text/plain")
             return
 
+        if path == "/healthz":
+            healthy = os.path.isfile(BINARY) and os.access(BINARY, os.X_OK)
+            self._send(
+                200 if healthy else 503,
+                json.dumps({"ok": healthy}),
+                "application/json",
+            )
+            return
+
+        if path == "/api/scenarios":
+            self._send(200, json.dumps(SCENARIOS), "application/json")
+            return
+
         if path == "/api/run":
-            result = run_simulator()
-            self._send(200, json.dumps(result), "application/json")
+            scenario = parse_qs(request.query).get("scenario", ["full-demo"])[0]
+            if scenario not in SCENARIOS:
+                self._send(
+                    400,
+                    json.dumps({"ok": False, "output": "Unknown scenario."}),
+                    "application/json",
+                )
+                return
+            result = run_simulator(scenario)
+            self._send(result.get("status", 200), json.dumps(result), "application/json")
             return
 
         # Anything else is rejected. (Other HTTP methods such as POST/PUT
@@ -192,7 +258,7 @@ def main():
     print("=" * 56)
     print(f" Project root : {PROJECT_ROOT}")
     print(f" Listening on : {host}:{port}")
-    print(f" Local URL    : http://localhost:{port}")
+    print(f" Service URL  : http://localhost:{port}")
     print(" Press Ctrl+C to stop.")
     print("=" * 56)
     try:

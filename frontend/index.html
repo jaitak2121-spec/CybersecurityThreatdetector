@@ -32,7 +32,7 @@
     min-height: 100vh;
     line-height: 1.5;
   }
-  .wrap { max-width: 1060px; margin: 0 auto; padding: 28px 20px 60px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
 
   header.hero {
     display: flex; align-items: center; justify-content: space-between;
@@ -48,6 +48,10 @@
     white-space: nowrap;
   }
   .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .badge.offline { color: var(--med); border-color: rgba(250,204,21,.4); background: rgba(250,204,21,.1); }
+  .badge.offline .dot { background: var(--med); }
+  .badge.running .dot { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .35; transform: scale(.75); } }
 
   .card {
     background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
@@ -61,9 +65,9 @@
   }
 
   /* Pipeline */
-  .pipeline { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+  .pipeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
   .step {
-    flex: 1 1 92px; min-width: 92px; position: relative;
+    min-width: 0; position: relative;
     background: #0f1b34; border: 1px solid var(--border); border-radius: 10px;
     padding: 11px 9px; text-align: center; transition: all .25s ease;
   }
@@ -78,7 +82,15 @@
   .step.done { border-color: rgba(52,211,153,.5); }
 
   /* Controls */
-  .controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+  .run-panel { display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 16px 20px; align-items: end; }
+  .run-panel h2, .run-panel .hint, .run-panel .notice { grid-column: 1 / -1; }
+  .controls { display: contents; }
+  .scenario-picker { color: var(--muted); font-size: 13px; }
+  .scenario-picker select {
+    display: block; margin-top: 4px; width: 100%; padding: 12px 14px;
+    color: var(--text); background: var(--panel); border: 1px solid var(--border);
+    border-radius: 9px; font: inherit;
+  }
   button.run {
     background: linear-gradient(180deg, var(--accent) 0%, #0ea5e9 100%);
     color: #06243b; border: none; border-radius: 11px;
@@ -89,6 +101,10 @@
   button.run:active { transform: translateY(1px); }
   button.run:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
   .hint { color: var(--muted); font-size: 13px; }
+  .notice {
+    border: 1px solid rgba(250,204,21,.35); background: rgba(250,204,21,.08);
+    color: #fde68a; border-radius: 10px; padding: 12px 14px; font-size: 13px;
+  }
   .spinner {
     width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25);
     border-top-color: #06243b; border-radius: 50%; display: inline-block;
@@ -97,17 +113,23 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   /* Stats */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
   .stat {
     background: #0f1b34; border: 1px solid var(--border); border-radius: 11px;
     padding: 14px; text-align: center;
   }
   .stat .v { font-size: 26px; font-weight: 800; }
   .stat .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
+  .stat .d { min-height: 18px; margin-top: 5px; color: var(--muted); font-size: 11px; }
+  .stat .d.up { color: var(--high); }
+  .stat .d.down { color: var(--ok); }
   .stat.crit .v { color: var(--crit); }
   .stat.alert .v { color: var(--high); }
   .stat.inc .v { color: var(--accent-2); }
   .stat.log .v { color: var(--accent); }
+  .run-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; color: var(--muted); font-size: 13px; }
+  .risk-banner { margin-top: 12px; padding: 11px 13px; border-radius: 10px; background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.25); }
+  .comparison { margin-top: 10px; color: var(--muted); font-size: 12px; }
 
   /* Output */
   .sections { display: flex; flex-direction: column; gap: 10px; }
@@ -159,6 +181,16 @@
   table.oop td code { color: var(--accent); font-size: 12px; }
   footer { color: var(--muted); font-size: 12px; text-align: center; margin-top: 26px; }
   a { color: var(--accent); }
+  @media (max-width: 820px) {
+    .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stats { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .run-panel { grid-template-columns: 1fr; }
+    .run-panel h2, .run-panel .hint, .run-panel .notice { grid-column: 1; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    button.run { width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -169,7 +201,7 @@
       <h1>🛡️ Cybersecurity Threat Detection &amp; Incident Response Simulator</h1>
       <p>A live view of the C++ OOP simulator — events → detection → threat → alert → incident → response → report.</p>
     </div>
-    <span class="badge"><span class="dot"></span> SAFE SIMULATION · nothing real is executed</span>
+    <span class="badge offline" id="serviceBadge"><span class="dot"></span><span id="serviceText">CHECKING SERVICE</span></span>
   </header>
 
   <!-- Pipeline -->
@@ -179,20 +211,34 @@
   </section>
 
   <!-- Controls -->
-  <div class="controls">
-    <button class="run" id="runBtn">▶ Run Simulation</button>
-    <span class="hint" id="hint">Click to compile &amp; run the real C++ program.</span>
-  </div>
+  <section class="card run-panel">
+    <h2>Simulation control center</h2>
+    <div class="controls">
+      <label class="scenario-picker">Scenario
+        <select id="scenarioSelect" aria-label="Simulation scenario">
+          <option value="full-demo">Loading scenarios…</option>
+        </select>
+      </label>
+      <button class="run" id="runBtn">▶ Run Simulation</button>
+      <span class="hint" id="hint">Choose a dataset or error path, then run the real C++ program.</span>
+      <div class="notice" id="fileNotice" hidden></div>
+    </div>
+  </section>
 
   <!-- Stats -->
   <section class="card" id="statsCard" style="display:none;">
-    <h2>Run summary</h2>
+    <h2>Run summary &amp; comparison</h2>
+    <div class="run-meta"><span id="runIdentity"></span><span id="runTiming"></span></div>
     <div class="stats">
-      <div class="stat crit"><div class="v" id="s-threats">–</div><div class="k">Threats</div></div>
-      <div class="stat alert"><div class="v" id="s-alerts">–</div><div class="k">Alerts</div></div>
-      <div class="stat inc"><div class="v" id="s-incidents">–</div><div class="k">Incidents</div></div>
-      <div class="stat log"><div class="v" id="s-logs">–</div><div class="k">Log entries</div></div>
+      <div class="stat crit"><div class="v" id="s-events">–</div><div class="k">Events</div><div class="d" id="d-events"></div></div>
+      <div class="stat alert"><div class="v" id="s-threats">–</div><div class="k">Threats</div><div class="d" id="d-threats"></div></div>
+      <div class="stat inc"><div class="v" id="s-critical">–</div><div class="k">Critical</div><div class="d" id="d-critical"></div></div>
+      <div class="stat alert"><div class="v" id="s-validation">–</div><div class="k">Data errors</div><div class="d" id="d-validation"></div></div>
+      <div class="stat crit"><div class="v" id="s-failures">–</div><div class="k">Failed actions</div><div class="d" id="d-failures"></div></div>
+      <div class="stat log"><div class="v" id="s-logs">–</div><div class="k">Log entries</div><div class="d" id="d-logs"></div></div>
     </div>
+    <div class="risk-banner" id="riskBanner"></div>
+    <div class="comparison" id="comparisonText"></div>
   </section>
 
   <!-- Output -->
@@ -232,7 +278,7 @@
   </section>
 
   <footer>
-    Presentation frontend · runs the existing <code>src/*.cpp</code> program via a small local Python server · no data leaves your machine.
+    Public-safe presentation frontend · every run uses an allow-listed simulated dataset · no real security action is performed.
   </footer>
 </div>
 
@@ -261,8 +307,62 @@
   });
 
   const runBtn = document.getElementById("runBtn");
+  const scenarioSelect = document.getElementById("scenarioSelect");
   const hint = document.getElementById("hint");
   const output = document.getElementById("output");
+  const serviceBadge = document.getElementById("serviceBadge");
+  const serviceText = document.getElementById("serviceText");
+  const fileNotice = document.getElementById("fileNotice");
+  const SCENARIO_LABELS = {
+    "full-demo": "Full demo (all data and errors)",
+    "attack-only": "Attack data (successful response)",
+    "validation-errors": "Invalid event data",
+    "response-failure": "Failed response action",
+    "high-volume": "High-volume attack data",
+  };
+
+  function populateScenarios(scenarios) {
+    scenarioSelect.innerHTML = "";
+    Object.entries(scenarios).forEach(([value, label]) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      scenarioSelect.appendChild(option);
+    });
+  }
+
+  function setServiceState(state, label) {
+    serviceBadge.className = `badge ${state}`;
+    serviceText.textContent = label;
+  }
+
+  async function loadScenarios() {
+    populateScenarios(SCENARIO_LABELS);
+    if (location.protocol === "file:") {
+      runBtn.disabled = true;
+      setServiceState("offline", "STATIC PREVIEW");
+      hint.textContent = "A public service URL is required to run the C++ simulator.";
+      fileNotice.hidden = false;
+      fileNotice.textContent = "This file was opened directly from your computer. It can preview the design, but it cannot call the simulator API. Open the deployed onrender.com URL instead; do not share this file:// address.";
+      output.innerHTML = '<div class="placeholder">Static UI preview — simulation data appears here when opened from the hosted service.</div>';
+      return;
+    }
+    try {
+      const res = await fetch("/api/scenarios");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const scenarios = await res.json();
+      populateScenarios(scenarios);
+      setServiceState("", "SERVICE ONLINE");
+    } catch (error) {
+      runBtn.disabled = true;
+      setServiceState("offline", "SERVICE OFFLINE");
+      hint.textContent = "The hosted simulator API is currently unavailable.";
+      fileNotice.hidden = false;
+      fileNotice.textContent = `The page loaded, but its simulator service did not respond (${error.message}).`;
+    }
+  }
+
+  loadScenarios();
 
   function classifyLine(line) {
     const l = line.toLowerCase();
@@ -336,12 +436,46 @@
     const m = text.match(re);
     return m ? m[1] : "–";
   }
-  function updateStats(text) {
+  function count(re, text) {
+    return (text.match(re) || []).length;
+  }
+  function updateStats(text, scenario, durationMs) {
+    const summary = {
+      scenario,
+      events: Number(num(/Synchronized events processed\s*:\s*(\d+)/i, text)),
+      threats: Number(num(/Threats detected\s*:\s*(\d+)/i, text)),
+      critical: Number(num(/CRITICAL\s*:\s*(\d+)/i, text)),
+      validation: Number(num(/VALIDATION\s*:\s*(\d+)/i, text)),
+      failures: count(/\(RESPONSE\).*-> FAILED/g, text),
+      logs: Number(num(/Log entries recorded\s*:\s*(\d+)/i, text)),
+    };
+    let previous = null;
+    try { previous = JSON.parse(sessionStorage.getItem("previousRunSummary")); } catch (_) {}
+
     document.getElementById("statsCard").style.display = "";
-    document.getElementById("s-threats").textContent = num(/Threats detected\s*:\s*(\d+)/i, text);
-    document.getElementById("s-alerts").textContent = num(/Alerts raised\s*:\s*(\d+)/i, text);
-    document.getElementById("s-incidents").textContent = num(/Incidents created\s*:\s*(\d+)/i, text);
-    document.getElementById("s-logs").textContent = num(/Log entries recorded\s*:\s*(\d+)/i, text);
+    document.getElementById("runIdentity").textContent = `${SCENARIO_LABELS[scenario]} · ${new Date().toLocaleTimeString()}`;
+    document.getElementById("runTiming").textContent = `${durationMs ?? "–"} ms server runtime`;
+    const metrics = ["events", "threats", "critical", "validation", "failures", "logs"];
+    metrics.forEach((metric) => {
+      document.getElementById(`s-${metric}`).textContent = summary[metric];
+      const deltaNode = document.getElementById(`d-${metric}`);
+      if (!previous || !Number.isFinite(previous[metric])) {
+        deltaNode.textContent = "first run";
+        deltaNode.className = "d";
+        return;
+      }
+      const delta = summary[metric] - previous[metric];
+      deltaNode.textContent = delta === 0 ? "no change" : `${delta > 0 ? "+" : ""}${delta} vs previous`;
+      deltaNode.className = `d ${delta > 0 ? "up" : delta < 0 ? "down" : ""}`;
+    });
+    const assessment = text.match(/System status:\s*([^\n]+)/i);
+    document.getElementById("riskBanner").textContent = assessment
+      ? `Assessment: ${assessment[1]}`
+      : "Assessment unavailable.";
+    document.getElementById("comparisonText").textContent = previous
+      ? `Compared with: ${SCENARIO_LABELS[previous.scenario] || previous.scenario}. Run another scenario to see the summary change again.`
+      : "Baseline saved. Run a different scenario to see per-metric changes.";
+    sessionStorage.setItem("previousRunSummary", JSON.stringify(summary));
   }
 
   async function animatePipeline() {
@@ -362,49 +496,55 @@
   }
 
   runBtn.addEventListener("click", async () => {
+    const scenario = scenarioSelect.value;
+    const scenarioLabel = scenarioSelect.options[scenarioSelect.selectedIndex].text;
     runBtn.disabled = true;
+    scenarioSelect.disabled = true;
+    setServiceState("running", "SIMULATION RUNNING");
     runBtn.innerHTML = '<span class="spinner"></span>Running…';
-    hint.textContent = "Compiling (if needed) and running the C++ simulator…";
+    hint.textContent = `Running: ${scenarioLabel}…`;
     resetPipeline();
     output.innerHTML = '<div class="placeholder">Running…</div>';
-    document.getElementById("statsCard").style.display = "none";
 
     const anim = animatePipeline();
 
     try {
-      const res = await fetch("/api/run");
+      const res = await fetch(`/api/run?scenario=${encodeURIComponent(scenario)}`);
       const data = await res.json();
       await anim;
 
       if (!data.ok) {
-        const label = data.stage === "build" ? "Compilation failed" : "Run failed";
+        const label = data.stage === "build" ? "Compilation failed"
+          : data.stage === "busy" ? "Simulator busy"
+          : data.stage === "timeout" ? "Simulation timed out"
+          : "Run failed";
         output.innerHTML = "";
         const box = document.createElement("div");
         box.className = "error-box";
         box.textContent = label + ":\n\n" + (data.buildLog || data.output || "Unknown error");
         output.appendChild(box);
         hint.textContent = label + ". See details above.";
+        setServiceState("", "SERVICE ONLINE");
         STEPS.forEach((_, i) => document.getElementById("step-" + i).classList.remove("done"));
         return;
       }
 
       renderOutput(data.output);
-      updateStats(data.output);
-      hint.textContent = data.built
-        ? "Compiled fresh and ran successfully. ✓"
-        : "Ran successfully (binary was up to date). ✓";
+      updateStats(data.output, scenario, data.durationMs);
+      setServiceState("", "SERVICE ONLINE");
+      hint.textContent = `${scenarioLabel} completed successfully. ✓`;
     } catch (err) {
       output.innerHTML = "";
       const box = document.createElement("div");
       box.className = "error-box";
       box.textContent =
-        "Could not reach the local server.\n\n" +
-        "Make sure you started it with:\n    python3 frontend/server.py\n\n" +
-        "Details: " + err;
+        "Could not reach the simulator service.\n\nDetails: " + err;
       output.appendChild(box);
-      hint.textContent = "Server not reachable.";
+      hint.textContent = "Simulator service not reachable.";
+      setServiceState("offline", "SERVICE OFFLINE");
     } finally {
       runBtn.disabled = false;
+      scenarioSelect.disabled = false;
       runBtn.innerHTML = "▶ Run Simulation";
     }
   });
