@@ -1,41 +1,25 @@
 flowchart LR
-    ES["Event Source"]
-    VISITOR["Public Visitor"]
-    SA["Security Analyst"]
-    ADMIN["System Administrator"]
+    USER["Visitor / Security Analyst"]
 
-    subgraph SYSTEM["Cybersecurity Threat Detection & Incident Response Simulator"]
-        VALIDATE(("Validate event"))
-        SELECT(("Select safe scenario"))
-        PROCESS(("Process security events"))
-        THREADS(("Monitor events concurrently"))
-        DETECT(("Detect and classify threat"))
-        ALERT(("Generate alert"))
-        INCIDENT(("Create incident"))
-        INVESTIGATE(("Attach evidence"))
-        RESPOND(("Perform simulated response"))
-        LOGS(("View security log"))
-        REPORT(("Generate security report"))
-        RULES(("Configure detection rules"))
+    subgraph SYSTEM["Cybersecurity Threat Detection Simulator"]
+        SELECT(("Select scenario"))
+        RUN(("Run simulation"))
+        VALIDATE(("Validate events"))
+        MONITOR(("Process events with threads"))
+        DETECT(("Detect threats and errors"))
+        RESPOND(("Simulate incident response"))
+        RESULTS(("View logs and report"))
+        COMPARE(("Compare run summaries"))
 
-        PROCESS -. "<<include>>" .-> VALIDATE
-        SELECT -. "<<include>>" .-> PROCESS
-        PROCESS -. "<<include>>" .-> THREADS
-        PROCESS -. "<<include>>" .-> DETECT
-        ALERT -. "<<extend>> when serious" .-> DETECT
-        INCIDENT -. "<<extend>> after escalation" .-> ALERT
-        INVESTIGATE -. "<<include>>" .-> INCIDENT
-        RESPOND -. "<<include>>" .-> INCIDENT
-        REPORT -. "<<include>>" .-> LOGS
+        SELECT --> RUN
+        RUN -. "<<include>>" .-> VALIDATE
+        RUN -. "<<include>>" .-> MONITOR
+        MONITOR -. "<<include>>" .-> DETECT
+        DETECT -. "<<include>>" .-> RESPOND
+        RESPOND -. "<<include>>" .-> RESULTS
+        RESULTS -. "<<extend>> after another run" .-> COMPARE
     end
 
-    ES --- PROCESS
-    VISITOR --- SELECT
-    SA --- ALERT
-    SA --- INCIDENT
-    SA --- INVESTIGATE
-    SA --- RESPOND
-    SA --- LOGS
-    SA --- REPORT
-    ADMIN --- RULES
-    ADMIN --- LOGS
+    USER --- SELECT
+    USER --- RESULTS
+    USER --- COMPARE
