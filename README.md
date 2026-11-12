@@ -29,6 +29,9 @@ and a higher-volume attack dataset.
 After every successful run, the dashboard keeps the previous summary in the
 browser session and shows metric-by-metric changes for events, threats,
 critical threats, validation errors, failed actions, and log entries.
+For presentations it also shows a 1–5 risk meter based on the highest threat
+severity, keeps the long evidence sections collapsible, and retries a sleeping
+cloud service without requiring a page refresh.
 
 ## Public deployment
 
