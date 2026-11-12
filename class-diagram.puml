@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 hide empty members
-title Implemented Class Diagram - Cybersecurity Threat Detector
+title Current Class Diagram - Cybersecurity Threat Detection Simulator
 
 package "Event model" {
   class EventInfo {
@@ -18,6 +18,8 @@ package "Event model" {
     - timestamp: string
     - severity: int
     # rawData: string
+    + getEventId(): string
+    + getEventType(): string
     + getSeverity(): int
     + displayEvent(): void
     + clone(): SecurityEvent*
@@ -27,6 +29,7 @@ package "Event model" {
     - username: string
     - loginSuccessful: bool
     + isFailedLogin(): bool
+    + getUsername(): string
     + displayEvent(): void
     + clone(): SecurityEvent*
   }
@@ -35,6 +38,7 @@ package "Event model" {
     - destinationPort: int
     - protocol: string
     + getDestinationPort(): int
+    + getProtocol(): string
     + displayEvent(): void
     + clone(): SecurityEvent*
   }
@@ -43,23 +47,29 @@ package "Event model" {
 package "Detection" {
   class DetectionRule {
     - ruleId: string
+    - ruleName: string
     - conditionType: string
     - severityThreshold: int
     - isEnabled: bool
+    + enable(): void
+    + disable(): void
     + matches(event: SecurityEvent): bool
   }
 
   class ThreatDetector {
     - rules: vector<DetectionRule>
+    - threatCounter: int
     + addRule(rule: DetectionRule): void
     + detectThreat(event: SecurityEvent): Threat
     + detectThreat(type: string, severity: int, ip: string): Threat
     + detectThreat(events: vector<SecurityEvent*>, ip: string, threshold: int): Threat
+    + countFailedLoginsFrom(events, ip): int
   }
 
   class Threat {
     - threatId: string
     - threatType: string
+    - sourceIp: string
     - severity: int
     - status: string
     {static} - threatCount: int
@@ -71,86 +81,128 @@ package "Detection" {
   class "Threat::ThreatLevel" as ThreatLevel {
     - level: int
     + describe(): string
+    + value(): int
   }
 }
 
 package "Incident response" {
   class Device {
     - deviceId: string
+    - deviceName: string
+    - ipAddress: string
+    - osType: string
     - status: string
+    + updateStatus(status: string): void
     + isolate(): void
   }
+
   class Alert {
     - alertId: string
+    - timestamp: string
     - severity: int
     - status: string
+    - description: string
+    {static} - alertCount: int
+    + updateStatus(status: string): void
     + markFalsePositive(reason: string): void
+    + isEscalatable(): bool
+    {static} + getAlertCount(): int
   }
+
   class Evidence {
     - evidenceId: string
     - evidenceType: string
+    - source: string
+    - timestamp: string
     - description: string
+    + displayEvidence(): void
   }
+
   class ResponseAction {
     - actionId: string
     - actionType: string
+    - target: string
     - status: string
     - outcome: string
     + execute(device: Device): bool
   }
+
   class Incident {
     - incidentId: string
+    - title: string
+    - severity: int
     - status: string
     - alerts: vector<Alert*>
     - evidenceList: vector<Evidence*>
     - actions: vector<ResponseAction*>
+    {static} - incidentCount: int
     + addAlert(alert: Alert*): void
     + addEvidence(evidence: Evidence*): void
     + executeResponse(action: ResponseAction*, device: Device): bool
+    {static} + getIncidentCount(): int
   }
 }
 
-package "Audit" {
+package "Audit and reporting" {
   class SecurityLog {
     - entries: vector<LogEntry>
-    + writeLogEntry(...): void
+    {static} - logCount: int
+    + writeLogEntry(time, type, message, source): void
+    + getEntryCount(): int
     + countByType(type: string): int
+    {static} + getLogCount(): int
   }
+
   class "SecurityLog::LogEntry" as LogEntry {
     - timestamp: string
     - eventType: string
     - message: string
+    - sourceComponent: string
+    + display(): void
   }
+
   class SecurityReport {
+    - reportId: string
+    - generatedAt: string
+    - periodCovered: string
     + generateSummary(threats, alerts, incidents, log): void
   }
 }
 
-package "Validation and conversion" {
+package "Validation" {
+  class SecurityException
+  class InvalidSeverityException
+  class InvalidEventException
+  class "ValidationGuard <<internal RAII>>" as ValidationGuard
+}
+
+package "Type conversion" {
   class NumericSeverity {
     - level: int
     + NumericSeverity(value: int)
+    + getLevel(): int
     + operator int(): int
   }
+
   class SecurityEventSummary {
     - eventType: string
     - sourceIp: string
     - severity: int
     + SecurityEventSummary(event: SecurityEvent)
+    + display(): void
   }
-  class SecurityException
-  class InvalidSeverityException
-  class InvalidEventException
 }
 
 package "Multithreading" {
   interface Runnable {
     + run(): void
   }
+
   class Thread {
     - worker: std::thread
     - target: Runnable*
     - state: State
+    {static} - currentThread: Thread*
     + start(): void
     + run(): void
     + join(): void
@@ -158,6 +210,7 @@ package "Multithreading" {
     {static} + yield(): void
     + getState(): State
   }
+
   enum "Thread::State" as ThreadState {
     NEW
     RUNNABLE
@@ -165,63 +218,96 @@ package "Multithreading" {
     TIMED_WAITING
     TERMINATED
   }
-  class "EventMonitoringThread <<final>>" as EventMonitoringThread {
-    - events: vector<SecurityEvent*>
-    - beginIndex: size_t
-    - endIndex: size_t
-    + run(): void
-  }
-  class "EventMonitoringTask <<final>>" as EventMonitoringTask {
-    - events: vector<SecurityEvent*>
-    - beginIndex: size_t
-    - endIndex: size_t
-    + run(): void
-  }
+
   class ThreadSafeEventMetrics {
     - metricsMutex: mutex
     - processedEvents: int
     - highSeverityEvents: int
+    - loginEvents: int
+    - networkEvents: int
     + record(event: SecurityEvent): void
+    + getProcessedEvents(): int
+    + getHighSeverityEvents(): int
   }
+
+  class "EventMonitoringThread <<final>>" as EventMonitoringThread {
+    - events: vector<SecurityEvent*>&
+    - beginIndex: size_t
+    - endIndex: size_t
+    - metrics: ThreadSafeEventMetrics&
+    + run(): void
+  }
+
+  class "EventMonitoringTask <<final>>" as EventMonitoringTask {
+    - events: vector<SecurityEvent*>&
+    - beginIndex: size_t
+    - endIndex: size_t
+    - metrics: ThreadSafeEventMetrics&
+    + run(): void
+  }
+}
+
+package "Legacy standalone exception demo" {
+  class "ExceptionHandlingDemo::SecurityException <<internal>>" as DemoSecurityException
+  class "ExceptionHandlingDemo::InvalidSeverityException <<internal>>" as DemoInvalidSeverityException
+  class "ExceptionHandlingDemo::InvalidEventException <<internal>>" as DemoInvalidEventException
+  class "ExceptionHandlingDemo::CleanupGuard <<internal RAII>>" as DemoCleanupGuard
 }
 
 EventInfo <|-- SecurityEvent : virtual inheritance
 SecurityEvent <|-- LoginEvent
 SecurityEvent <|-- NetworkEvent
-Threat *-- ThreatLevel
-SecurityLog *-- LogEntry
 
-ThreatDetector *-- "0..*" DetectionRule
+ThreatDetector *-- "0..*" DetectionRule : owns by value
 ThreatDetector ..> SecurityEvent : analyzes
 ThreatDetector ..> Threat : creates
+ThreatDetector ..> LoginEvent : dynamic_cast
+ThreatDetector ..> NetworkEvent : dynamic_cast
+DetectionRule ..> SecurityEvent : evaluates
 DetectionRule ..> LoginEvent : dynamic_cast
 DetectionRule ..> NetworkEvent : dynamic_cast
+Threat *-- ThreatLevel : nested value
 
-Device "1" -- "0..*" SecurityEvent : source device
-Threat "1" -- "0..1" Alert : raises
-Incident "1" o-- "1..*" Alert
-Incident "1" o-- "0..*" Evidence
-Incident "1" o-- "0..*" ResponseAction
-ResponseAction --> Device : targets
-SecurityReport ..> Threat
-SecurityReport ..> Alert
-SecurityReport ..> Incident
-SecurityReport ..> SecurityLog
+Incident "1" o-- "0..*" Alert : stores pointers
+Incident "1" o-- "0..*" Evidence : stores pointers
+Incident "1" o-- "0..*" ResponseAction : stores pointers
+Incident ..> Device : passes to action
+ResponseAction --> Device : simulated update
+
+SecurityLog *-- "0..*" LogEntry : owns by value
+SecurityReport ..> Threat : summarizes
+SecurityReport ..> Alert : summarizes
+SecurityReport ..> Incident : summarizes
+SecurityReport ..> SecurityLog : queries
 
 SecurityException <|-- InvalidSeverityException
 SecurityException <|-- InvalidEventException
-SecurityEvent ..> InvalidSeverityException : may throw
-SecurityEvent ..> InvalidEventException : may throw
+SecurityEvent ..> SecurityException : validation may throw
+SecurityEvent ..> ValidationGuard : validation helper
 NumericSeverity ..> InvalidSeverityException : may throw
-SecurityEventSummary ..> SecurityEvent : converts from
 NumericSeverity ..> SecurityEvent : converts severity
+SecurityEventSummary ..> SecurityEvent : converts event
+
 Runnable <|.. Thread
-Thread <|-- EventMonitoringThread : extends
-Runnable <|.. EventMonitoringTask : implements
-Thread o-- Runnable : optional target
-Thread *-- ThreadState
-EventMonitoringThread --> ThreadSafeEventMetrics : synchronized update
-EventMonitoringTask --> ThreadSafeEventMetrics : synchronized update
-EventMonitoringThread ..> SecurityEvent : reads range
-EventMonitoringTask ..> SecurityEvent : reads range
+Runnable <|.. EventMonitoringTask
+Thread <|-- EventMonitoringThread
+Thread o-- "0..1" Runnable : non-owning target
+Thread *-- ThreadState : nested state
+EventMonitoringThread --> ThreadSafeEventMetrics : synchronized updates
+EventMonitoringTask --> ThreadSafeEventMetrics : synchronized updates
+EventMonitoringThread ..> SecurityEvent : reads event range
+EventMonitoringTask ..> SecurityEvent : reads event range
+
+DemoSecurityException <|-- DemoInvalidSeverityException
+DemoSecurityException <|-- DemoInvalidEventException
+
+note bottom of SecurityEvent
+  SecurityEvent construction calls the real
+  ExceptionHandling validation workflow.
+end note
+
+note bottom of DemoCleanupGuard
+  These implementation-local demo classes compile,
+  but main() uses the Validation package above.
+end note
 @enduml
