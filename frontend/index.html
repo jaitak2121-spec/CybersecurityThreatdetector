@@ -151,6 +151,19 @@
   .risk-meter span.on:nth-child(4) { background: var(--high); }
   .risk-meter span.on:nth-child(5) { background: var(--crit); }
   .comparison { margin-top: 10px; color: var(--muted); font-size: 12px; }
+  .insights { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .mini-panel { padding: 13px; border-radius: 10px; background: #0f1b34; border: 1px solid var(--border); }
+  .mini-panel h3 { margin: 0 0 10px; color: var(--muted); font-size: 11px; letter-spacing: .8px; text-transform: uppercase; }
+  .severity-bar { display: flex; height: 12px; overflow: hidden; border-radius: 999px; background: #263450; }
+  .severity-bar span { flex-basis: 0; min-width: 0; transition: flex-grow .35s ease; }
+  .severity-bar .critical { background: var(--crit); }
+  .severity-bar .high { background: var(--high); }
+  .severity-bar .medium { background: var(--med); }
+  .severity-bar .low { background: var(--low); }
+  .severity-legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 9px; color: var(--muted); font-size: 10.5px; }
+  .severity-legend strong { display: block; color: var(--text); font-size: 13px; }
+  .findings { margin: 0; padding-left: 18px; color: #cbd5e1; font-size: 11.5px; }
+  .findings li + li { margin-top: 5px; }
 
   /* Output */
   .card-title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -211,6 +224,7 @@
     .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stats { grid-template-columns: repeat(3, 1fr); }
     .demo-guide { grid-template-columns: 1fr; }
+    .insights { grid-template-columns: 1fr; }
   }
   @media (max-width: 560px) {
     .run-panel { grid-template-columns: 1fr; }
@@ -268,8 +282,8 @@
   </section>
 
   <!-- Stats -->
-  <section class="card" id="statsCard" style="display:none;">
-    <h2>Run summary &amp; comparison</h2>
+  <section class="card" id="statsCard" style="display:none;" aria-live="polite">
+    <div class="card-title-row"><h2>Run summary &amp; comparison</h2><button class="ghost" id="copySummary" type="button">Copy summary</button></div>
     <div class="run-meta"><span id="runIdentity"></span><span id="runTiming"></span></div>
     <div class="stats">
       <div class="stat crit"><div class="v" id="s-events">–</div><div class="k">Events</div><div class="d" id="d-events"></div></div>
@@ -286,6 +300,19 @@
       <div class="risk-meter" id="riskMeter" aria-label="Risk score out of five"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
     <div class="comparison" id="comparisonText"></div>
+    <div class="insights">
+      <div class="mini-panel">
+        <h3>Threat severity distribution</h3>
+        <div class="severity-bar" aria-label="Threat severity distribution"><span class="critical" id="barCritical"></span><span class="high" id="barHigh"></span><span class="medium" id="barMedium"></span><span class="low" id="barLow"></span></div>
+        <div class="severity-legend">
+          <span><strong id="sevCritical">0</strong>Critical</span><span><strong id="sevHigh">0</strong>High</span><span><strong id="sevMedium">0</strong>Medium</span><span><strong id="sevLow">0</strong>Low / info</span>
+        </div>
+      </div>
+      <div class="mini-panel">
+        <h3>Key findings</h3>
+        <ul class="findings" id="keyFindings"></ul>
+      </div>
+    </div>
   </section>
 
   <!-- Output -->
@@ -366,6 +393,7 @@
   const scenarioDescription = document.getElementById("scenarioDescription");
   const PUBLIC_URL = "https://cybersecurity-threat-detector.onrender.com";
   let serviceReady = false;
+  let lastSummaryText = "";
   const SCENARIO_LABELS = {
     "full-demo": "Full demo (all data and errors)",
     "attack-only": "Attack data (successful response)",
@@ -557,8 +585,13 @@
       critical: Number(num(/CRITICAL\s*:\s*(\d+)/i, text)),
       high: Number(num(/^\s*HIGH\s*:\s*(\d+)/im, text)),
       medium: Number(num(/^\s*MEDIUM\s*:\s*(\d+)/im, text)),
+      low: Number(num(/^\s*LOW \/ INFO\s*:\s*(\d+)/im, text)),
       validation: Number(num(/VALIDATION\s*:\s*(\d+)/i, text)),
       failures: count(/\(RESPONSE\).*-> FAILED/g, text),
+      completed: count(/\(RESPONSE\).*-> COMPLETED/g, text),
+      ruleMatches: count(/Rule triggered:/g, text),
+      alerts: Number(num(/Alerts raised\s*:\s*(\d+)/i, text)),
+      incidents: Number(num(/Incidents created\s*:\s*(\d+)/i, text)),
       logs: Number(num(/Log entries recorded\s*:\s*(\d+)/i, text)),
     };
     let previous = null;
@@ -583,7 +616,9 @@
     const risk = summary.critical > 0 ? 5 : summary.high > 0 ? 4 : summary.medium > 0 ? 3 : summary.threats > 0 ? 1 : 0;
     const riskNames = ["NO RISK", "INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"];
     const assessment = text.match(/System status:\s*([^\n]+)/i);
-    document.getElementById("riskScore").textContent = `${risk}/5`;
+    const riskScore = document.getElementById("riskScore");
+    riskScore.textContent = `${risk}/5`;
+    riskScore.style.color = risk >= 5 ? "var(--crit)" : risk >= 4 ? "var(--high)" : risk >= 3 ? "var(--med)" : "var(--low)";
     document.getElementById("riskLabel").textContent = `${riskNames[risk]} RISK`;
     document.getElementById("riskReason").textContent = assessment
       ? `${assessment[1]} Score = highest threat severity in this run.`
@@ -592,8 +627,48 @@
     document.getElementById("comparisonText").textContent = previous
       ? `Compared with: ${SCENARIO_LABELS[previous.scenario] || previous.scenario}. Run another scenario to see the summary change again.`
       : "Baseline saved. Run a different scenario to see per-metric changes.";
+    const severities = { Critical: summary.critical, High: summary.high, Medium: summary.medium, Low: summary.low };
+    Object.entries(severities).forEach(([name, value]) => {
+      document.getElementById(`sev${name}`).textContent = value;
+      document.getElementById(`bar${name}`).style.flexGrow = value;
+    });
+    document.querySelector(".severity-bar").setAttribute(
+      "aria-label",
+      `Critical ${summary.critical}, high ${summary.high}, medium ${summary.medium}, low or info ${summary.low}`
+    );
+    const findings = [
+      `Threading: two synchronized workers processed ${summary.events} events.`,
+      `Detection: ${summary.ruleMatches} rule matches; ${summary.threats} threat records reported.`,
+      `Response: ${summary.completed} completed and ${summary.failures} failed simulated actions.`,
+      `Validation: ${summary.validation} rejected inputs; alerts ${summary.alerts}; incidents ${summary.incidents}.`,
+    ];
+    const findingsList = document.getElementById("keyFindings");
+    findingsList.replaceChildren(...findings.map((finding) => {
+      const item = document.createElement("li");
+      item.textContent = finding;
+      return item;
+    }));
+    lastSummaryText = [
+      "Cybersecurity Threat Detection Simulator",
+      `Scenario: ${SCENARIO_LABELS[scenario]}`,
+      `Risk: ${risk}/5 ${riskNames[risk]}`,
+      `Events: ${summary.events} | Threats: ${summary.threats} | Critical: ${summary.critical}`,
+      `Validation errors: ${summary.validation} | Failed actions: ${summary.failures} | Logs: ${summary.logs}`,
+      `Live demo: ${PUBLIC_URL}`,
+    ].join("\n");
     sessionStorage.setItem("previousRunSummary", JSON.stringify(summary));
   }
+
+  document.getElementById("copySummary").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    try {
+      await navigator.clipboard.writeText(lastSummaryText);
+      button.textContent = "Copied ✓";
+    } catch (_) {
+      button.textContent = "Copy unavailable";
+    }
+    setTimeout(() => { button.textContent = "Copy summary"; }, 1600);
+  });
 
   async function animatePipeline() {
     // Light up each stage briefly for a nice "it's running" effect.
