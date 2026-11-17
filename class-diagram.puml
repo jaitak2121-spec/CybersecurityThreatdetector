@@ -1,313 +1,115 @@
 @startuml class-diagram
-!pragma layout smetana
+left to right direction
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 hide empty members
-title Current Class Diagram - Cybersecurity Threat Detection Simulator
+title Simple Class Diagram - Cybersecurity Threat Detector
 
-package "Event model" {
+package "Events" {
   class EventInfo {
     # sourceIp: string
-    + getSourceIp(): string
-    + displayInfo(): void
   }
-
   class SecurityEvent {
     - eventId: string
     - eventType: string
-    - timestamp: string
     - severity: int
-    # rawData: string
-    + getEventId(): string
-    + getEventType(): string
-    + getSeverity(): int
-    + displayEvent(): void
-    + clone(): SecurityEvent*
+    + displayEvent()
   }
-
   class LoginEvent {
     - username: string
     - loginSuccessful: bool
-    + isFailedLogin(): bool
-    + getUsername(): string
-    + displayEvent(): void
-    + clone(): SecurityEvent*
   }
-
   class "NetworkEvent <<final>>" as NetworkEvent {
     - destinationPort: int
     - protocol: string
-    + getDestinationPort(): int
-    + getProtocol(): string
-    + displayEvent(): void
-    + clone(): SecurityEvent*
+  }
+  class NumericSeverity {
+    - level: int
+    {static} + forLogin(success, failures): NumericSeverity
+    {static} + forNetwork(port, protocol): NumericSeverity
   }
 }
 
 package "Detection" {
   class DetectionRule {
-    - ruleId: string
-    - ruleName: string
     - conditionType: string
     - severityThreshold: int
-    - isEnabled: bool
-    + enable(): void
-    + disable(): void
-    + matches(event: SecurityEvent): bool
+    + matches(event): bool
   }
-
   class ThreatDetector {
     - rules: vector<DetectionRule>
-    - threatCounter: int
-    + addRule(rule: DetectionRule): void
-    + detectThreat(event: SecurityEvent): Threat
-    + detectThreat(type: string, severity: int, ip: string): Threat
-    + detectThreat(events: vector<SecurityEvent*>, ip: string, threshold: int): Threat
-    + countFailedLoginsFrom(events, ip): int
+    + detectThreat(event): Threat
+    + detectThreat(events, ip, threshold): Threat
   }
-
   class Threat {
-    - threatId: string
     - threatType: string
-    - sourceIp: string
     - severity: int
     - status: string
-    {static} - threatCount: int
-    + getLevel(): ThreatLevel
-    + updateStatus(status: string): void
-    {static} + getThreatCount(): int
-  }
-
-  class "Threat::ThreatLevel" as ThreatLevel {
-    - level: int
-    + describe(): string
-    + value(): int
   }
 }
 
-package "Incident response" {
-  class Device {
-    - deviceId: string
-    - deviceName: string
-    - ipAddress: string
-    - osType: string
-    - status: string
-    + updateStatus(status: string): void
-    + isolate(): void
-  }
-
-  class Alert {
-    - alertId: string
-    - timestamp: string
-    - severity: int
-    - status: string
-    - description: string
-    {static} - alertCount: int
-    + updateStatus(status: string): void
-    + markFalsePositive(reason: string): void
-    + isEscalatable(): bool
-    {static} + getAlertCount(): int
-  }
-
-  class Evidence {
-    - evidenceId: string
-    - evidenceType: string
-    - source: string
-    - timestamp: string
-    - description: string
-    + displayEvidence(): void
-  }
-
-  class ResponseAction {
-    - actionId: string
-    - actionType: string
-    - target: string
-    - status: string
-    - outcome: string
-    + execute(device: Device): bool
-  }
-
+package "Incident Response" {
+  class Alert
   class Incident {
-    - incidentId: string
-    - title: string
-    - severity: int
-    - status: string
-    - alerts: vector<Alert*>
-    - evidenceList: vector<Evidence*>
-    - actions: vector<ResponseAction*>
-    {static} - incidentCount: int
-    + addAlert(alert: Alert*): void
-    + addEvidence(evidence: Evidence*): void
-    + executeResponse(action: ResponseAction*, device: Device): bool
-    {static} + getIncidentCount(): int
+    + addAlert(alert)
+    + addEvidence(evidence)
+    + executeResponse(action, device)
+  }
+  class Evidence
+  class ResponseAction {
+    + execute(device): bool
+  }
+  class Device {
+    + isolate()
   }
 }
 
-package "Audit and reporting" {
-  class SecurityLog {
-    - entries: vector<LogEntry>
-    {static} - logCount: int
-    + writeLogEntry(time, type, message, source): void
-    + getEntryCount(): int
-    + countByType(type: string): int
-    {static} + getLogCount(): int
-  }
-
-  class "SecurityLog::LogEntry" as LogEntry {
-    - timestamp: string
-    - eventType: string
-    - message: string
-    - sourceComponent: string
-    + display(): void
-  }
-
-  class SecurityReport {
-    - reportId: string
-    - generatedAt: string
-    - periodCovered: string
-    + generateSummary(threats, alerts, incidents, log): void
-  }
-}
-
-package "Validation" {
+package "Supporting Services" {
+  interface Runnable
+  class Thread
+  class EventMonitoringThread
+  class EventMonitoringTask
+  class ThreadSafeEventMetrics
+  class SecurityLog
+  class SecurityReport
   class SecurityException
-  class InvalidSeverityException
-  class InvalidEventException
-  class "ValidationGuard <<internal RAII>>" as ValidationGuard
 }
 
-package "Type conversion" {
-  class NumericSeverity {
-    - level: int
-    + NumericSeverity(value: int)
-    + getLevel(): int
-    + operator int(): int
-  }
-
-  class SecurityEventSummary {
-    - eventType: string
-    - sourceIp: string
-    - severity: int
-    + SecurityEventSummary(event: SecurityEvent)
-    + display(): void
-  }
-}
-
-package "Multithreading" {
-  interface Runnable {
-    + run(): void
-  }
-
-  class Thread {
-    - worker: std::thread
-    - target: Runnable*
-    - state: State
-    {static} - currentThread: Thread*
-    + start(): void
-    + run(): void
-    + join(): void
-    {static} + sleep(milliseconds: uint): void
-    {static} + yield(): void
-    + getState(): State
-  }
-
-  enum "Thread::State" as ThreadState {
-    NEW
-    RUNNABLE
-    RUNNING
-    TIMED_WAITING
-    TERMINATED
-  }
-
-  class ThreadSafeEventMetrics {
-    - metricsMutex: mutex
-    - processedEvents: int
-    - highSeverityEvents: int
-    - loginEvents: int
-    - networkEvents: int
-    + record(event: SecurityEvent): void
-    + getProcessedEvents(): int
-    + getHighSeverityEvents(): int
-  }
-
-  class "EventMonitoringThread <<final>>" as EventMonitoringThread {
-    - events: vector<SecurityEvent*>&
-    - beginIndex: size_t
-    - endIndex: size_t
-    - metrics: ThreadSafeEventMetrics&
-    + run(): void
-  }
-
-  class "EventMonitoringTask <<final>>" as EventMonitoringTask {
-    - events: vector<SecurityEvent*>&
-    - beginIndex: size_t
-    - endIndex: size_t
-    - metrics: ThreadSafeEventMetrics&
-    + run(): void
-  }
-}
-
-package "Legacy standalone exception demo" {
-  class "ExceptionHandlingDemo::SecurityException <<internal>>" as DemoSecurityException
-  class "ExceptionHandlingDemo::InvalidSeverityException <<internal>>" as DemoInvalidSeverityException
-  class "ExceptionHandlingDemo::InvalidEventException <<internal>>" as DemoInvalidEventException
-  class "ExceptionHandlingDemo::CleanupGuard <<internal RAII>>" as DemoCleanupGuard
-}
-
-EventInfo <|-- SecurityEvent : virtual inheritance
+EventInfo <|-- SecurityEvent : virtual
 SecurityEvent <|-- LoginEvent
 SecurityEvent <|-- NetworkEvent
+LoginEvent ..> NumericSeverity : calculates score
+NetworkEvent ..> NumericSeverity : calculates score
 
-ThreatDetector *-- "0..*" DetectionRule : owns by value
+ThreatDetector *-- DetectionRule
 ThreatDetector ..> SecurityEvent : analyzes
 ThreatDetector ..> Threat : creates
-ThreatDetector ..> LoginEvent : dynamic_cast
-ThreatDetector ..> NetworkEvent : dynamic_cast
-DetectionRule ..> SecurityEvent : evaluates
-DetectionRule ..> LoginEvent : dynamic_cast
-DetectionRule ..> NetworkEvent : dynamic_cast
-Threat *-- ThreatLevel : nested value
 
-Incident "1" o-- "0..*" Alert : stores pointers
-Incident "1" o-- "0..*" Evidence : stores pointers
-Incident "1" o-- "0..*" ResponseAction : stores pointers
-Incident ..> Device : passes to action
-ResponseAction --> Device : simulated update
-
-SecurityLog *-- "0..*" LogEntry : owns by value
-SecurityReport ..> Threat : summarizes
-SecurityReport ..> Alert : summarizes
-SecurityReport ..> Incident : summarizes
-SecurityReport ..> SecurityLog : queries
-
-SecurityException <|-- InvalidSeverityException
-SecurityException <|-- InvalidEventException
-SecurityEvent ..> SecurityException : validation may throw
-SecurityEvent ..> ValidationGuard : validation helper
-NumericSeverity ..> InvalidSeverityException : may throw
-NumericSeverity ..> SecurityEvent : converts severity
-SecurityEventSummary ..> SecurityEvent : converts event
+Threat ..> Alert : raises
+Incident o-- Alert
+Incident o-- Evidence
+Incident o-- ResponseAction
+ResponseAction --> Device : simulated action
 
 Runnable <|.. Thread
-Runnable <|.. EventMonitoringTask
 Thread <|-- EventMonitoringThread
-Thread o-- "0..1" Runnable : non-owning target
-Thread *-- ThreadState : nested state
-EventMonitoringThread --> ThreadSafeEventMetrics : synchronized updates
-EventMonitoringTask --> ThreadSafeEventMetrics : synchronized updates
-EventMonitoringThread ..> SecurityEvent : reads event range
-EventMonitoringTask ..> SecurityEvent : reads event range
+Runnable <|.. EventMonitoringTask
+EventMonitoringThread --> ThreadSafeEventMetrics
+EventMonitoringTask --> ThreadSafeEventMetrics
 
-DemoSecurityException <|-- DemoInvalidSeverityException
-DemoSecurityException <|-- DemoInvalidEventException
+SecurityEvent ..> SecurityException : invalid input
 
-note bottom of SecurityEvent
-  SecurityEvent construction calls the real
-  ExceptionHandling validation workflow.
+note bottom of SecurityReport
+  SecurityLog records the workflow.
+  SecurityReport summarizes its results.
 end note
 
-note bottom of DemoCleanupGuard
-  These implementation-local demo classes compile,
-  but main() uses the Validation package above.
+note bottom of NumericSeverity
+  Login score:
+  success = 1
+  failure = 2 + repeat count (max 4)
+
+  Network score:
+  1 + TCP risk + risky-port risk
 end note
 @enduml

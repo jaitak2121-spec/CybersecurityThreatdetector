@@ -1,126 +1,60 @@
 @startuml object-diagram
-!pragma layout smetana
+left to right direction
 skinparam objectAttributeIconSize 0
-title Object Diagram - Executed Brute-Force Scenario
+title Simple Object Diagram - Full Demo Scenario
 
 object "authServer : Device" as device {
-  deviceId = "DEV-SRV-04"
-  status = "ISOLATED"
+  status = ISOLATED
 }
 object "login1 : LoginEvent" as login1 {
-  eventId = "EVT-8801"
-  sourceIp = "203.0.113.19"
-  severity = 4
-  loginSuccessful = false
+  failedAttempts = 1
+  calculatedSeverity = 3
 }
 object "login2 : LoginEvent" as login2 {
-  eventId = "EVT-8802"
-  sourceIp = "203.0.113.19"
-  severity = 4
-  loginSuccessful = false
+  failedAttempts = 2
+  calculatedSeverity = 4
 }
 object "login3 : LoginEvent" as login3 {
-  eventId = "EVT-8803"
-  sourceIp = "203.0.113.19"
-  severity = 4
-  loginSuccessful = false
+  failedAttempts = 3
+  calculatedSeverity = 4
 }
 object "sshEvent : NetworkEvent" as network {
-  eventId = "EVT-8805"
-  destinationPort = 22
-  protocol = "TCP"
-}
-object "failedLoginRule : DetectionRule" as rule {
-  ruleId = "RULE-AUTH-005"
-  conditionType = "FAILED_LOGIN"
-  severityThreshold = 4
+  port = 22
+  protocol = TCP
+  calculatedSeverity = 4
 }
 object "detector : ThreatDetector" as detector
 object "bruteForce : Threat" as threat {
-  threatId = "THREAT-6"
-  threatType = "Credential Access - Brute Force"
   severity = 4
-  status = "CONTAINED"
-}
-object "alert : Alert" as alert {
-  alertId = "ALT-9042"
-  status = "ESCALATED"
+  status = CONTAINED
 }
 object "incident : Incident" as incident {
-  incidentId = "INC-2026-0044"
-  status = "CONTAINED"
+  status = CONTAINED
 }
-object "authEvidence : Evidence" as evidence {
-  evidenceId = "EVD-3301"
-  evidenceType = "AUTH_LOG_EXTRACT"
-}
+object "evidence : Evidence" as evidence
 object "isolate : ResponseAction" as action {
-  actionId = "ACT-1092"
-  actionType = "ISOLATE_DEVICE"
-  status = "COMPLETED"
+  status = COMPLETED
 }
-object "severity : NumericSeverity" as severity {
-  level = 4
-}
-object "eventSummary : SecurityEventSummary" as summary {
-  eventType = "LOGIN_EVENT"
-  sourceIp = "203.0.113.19"
-  severity = 4
-}
-object "inheritedWorker : EventMonitoringThread" as inheritedWorker {
-  state = "TERMINATED"
-  range = "0..1"
-}
-object "monitoringTask : EventMonitoringTask" as monitoringTask {
-  range = "2..4"
-}
-object "runnableWorker : Thread" as runnableWorker {
-  state = "TERMINATED"
-}
-object "threadMetrics : ThreadSafeEventMetrics" as metrics {
-  processedEvents = 5
-  highSeverityEvents = 4
-  loginEvents = 4
-  networkEvents = 1
-}
-object "audit : SecurityLog" as log {
-  entries = 18
-}
-object "dailyReport : SecurityReport" as report {
-  reportId = "REP-2026-08-25"
-  periodCovered = "2026-08-25"
-}
+object "report : SecurityReport" as report
 
-device -- login1 : generated
-device -- login2 : generated
-device -- login3 : generated
-device -- network : generated
-detector *-- rule : configured rule
-detector ..> login1 : analyzed
-detector ..> login2 : analyzed
-detector ..> login3 : analyzed
-detector ..> threat : created from pattern
-threat -- alert : raised
-incident o-- alert
+device -- login1
+device -- login2
+device -- login3
+device -- network
+detector ..> login1 : analyzes
+detector ..> login2 : analyzes
+detector ..> login3 : analyzes
+detector ..> network : analyzes
+detector ..> threat : detects pattern
+threat --> incident : escalates
 incident o-- evidence
 incident o-- action
-action --> device : isolated
-login1 ..> severity : int -> object -> int
-login1 ..> summary : class conversion
-inheritedWorker ..> login1 : processed range
-inheritedWorker --> metrics : synchronized updates
-runnableWorker o-- monitoringTask : Runnable target
-monitoringTask ..> network : processed range
-monitoringTask --> metrics : synchronized updates
-metrics ..> detector : ready before detection
-log ..> incident : audited
-report ..> threat : summarized
-report ..> incident : summarized
-report ..> log : counted
+action --> device : isolates safely
+report ..> threat : summarizes
+report ..> incident : summarizes
 
-note right of login3
-  EVT-BAD with severity 9 and an event
-  with missing identity are rejected
-  before entering this graph.
+note bottom of login3
+  Severity is calculated from event facts.
+  It is not supplied manually.
 end note
 @enduml

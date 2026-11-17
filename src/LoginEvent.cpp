@@ -1,4 +1,5 @@
 #include "LoginEvent.h"
+#include "TypeCasting.h"
 #include <iostream>
 
 using namespace std;
@@ -7,14 +8,21 @@ LoginEvent::LoginEvent(
     string id,
     string time,
     string ip,
-    int sev,
     string user,
-    bool success
+    bool success,
+    int recentFailures
 )
     // Virtual base EventInfo is listed first because it is always
     // constructed first; SecurityEvent then forwards the same ip.
     : EventInfo(ip),
-      SecurityEvent(id, "LOGIN_EVENT", time, ip, sev)
+      SecurityEvent(
+          id,
+          "LOGIN_EVENT",
+          time,
+          ip,
+          TypeCasting::NumericSeverity::forLogin(
+              success, recentFailures).getLevel()
+      )
 {
     // --------------------------------------------------------
     // OOP CONCEPT: this POINTER
@@ -41,7 +49,7 @@ void LoginEvent::displayEvent() const
     cout << "Login Status    : "
          << (loginSuccessful ? "Successful" : "Failed")
          << endl;
-    cout << "Severity        : " << getSeverity() << endl;
+    cout << "Severity Score  : " << getSeverity() << " (calculated)" << endl;
 }
 
 // Copies the *derived* object, so username/loginSuccessful survive.

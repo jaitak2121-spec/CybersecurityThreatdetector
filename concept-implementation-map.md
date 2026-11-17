@@ -24,8 +24,9 @@ and how it is used in the running project.
 | `final` | `NetworkEvent` | Prevents further inheritance |
 | Constructors/destructors | All classes; event and thread hierarchies | Objects initialize valid state; base destructors are virtual |
 | Smart pointers | Section 1 of `main.cpp` | `unique_ptr<SecurityEvent>` owns polymorphic events automatically |
-| Basic-to-class conversion | `NumericSeverity` | Converts an admitted event's integer severity to an object |
+| Basic-to-class conversion | `NumericSeverity` | Wraps a calculated integer severity as an object |
 | Class-to-basic conversion | `NumericSeverity::operator int` | Converts the severity object back to an integer |
+| Automatic severity scoring | `NumericSeverity::forLogin`, `forNetwork` | Derives a 1-5 score from event facts instead of normal callers supplying it |
 | Class-to-class conversion | `SecurityEventSummary` | Builds a summary directly from a real `SecurityEvent` |
 | Function template | `TypeCasting::printMetric<T>` | Prints integer and string metrics through one generic function |
 | Custom exceptions | `ExceptionHandling` hierarchy | Invalid event identity/severity throws specific derived exceptions |

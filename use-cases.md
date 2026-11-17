@@ -21,12 +21,13 @@
 **Postcondition:** Each valid event is logged and evaluated.
 
 1. The event source submits a login or network event.
-2. The system validates the event id, type, and severity.
-3. The system stores and displays the valid event polymorphically.
-4. Two monitoring threads process separate event ranges and update synchronized metrics.
-5. The main flow joins both workers before reading their results.
-6. The detector evaluates the event using enabled rules.
-7. The system records the resulting threat and audit entry.
+2. The system calculates severity from the login outcome, repeat count, protocol, and port.
+3. The system validates the event id, type, and calculated severity.
+4. The system stores and displays the valid event polymorphically.
+5. Two monitoring threads process separate event ranges and update synchronized metrics.
+6. The main flow joins both workers before reading their results.
+7. The detector evaluates the event using enabled rules.
+8. The system records the resulting threat and audit entry.
 
 **Alternate: invalid input:** A custom exception rejects the event, RAII cleanup
 runs, and the validation failure is logged. The invalid event is not detected.

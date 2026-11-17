@@ -16,7 +16,7 @@
 | `Device` | Represent the affected host and simulated isolation state | `SecurityEvent`, `ResponseAction` |
 | `SecurityLog` | Store nested log entries and answer simple counts | All workflow services, `SecurityReport` |
 | `SecurityReport` | Aggregate threats, alerts, incidents, and log counts | `Threat`, `Alert`, `Incident`, `SecurityLog` |
-| `NumericSeverity` | Convert numeric severity to/from an object | `SecurityEvent`, exception hierarchy |
+| `NumericSeverity` | Calculate login/network severity and convert it to/from an object | `LoginEvent`, `NetworkEvent`, exception hierarchy |
 | `SecurityEventSummary` | Create a compact view by class-to-class conversion | `SecurityEvent` |
 | Exception hierarchy | Reject invalid event data with specific error types | `SecurityEvent`, `NumericSeverity` |
 | `Runnable` | Define the `run()` contract for a task | `Thread`, `EventMonitoringTask` |

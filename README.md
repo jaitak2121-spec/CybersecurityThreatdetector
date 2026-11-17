@@ -57,7 +57,9 @@ python3 tests/smoke_test.py
 
 ```text
 Device
-  -> validated LoginEvent / NetworkEvent objects
+  -> LoginEvent / NetworkEvent facts
+  -> automatically calculated severity (1..5)
+  -> validated event objects
   -> two synchronized monitoring workers
   -> DetectionRule evaluation by ThreatDetector
   -> Threat and Alert
@@ -70,6 +72,21 @@ The example uses three failed logins from one source and one risky SSH event.
 An invalid severity and a missing event identity are also submitted and rejected
 before detection, exercising both derived and base exception handlers.
 
+## Automatic severity scoring
+
+Normal event constructors no longer receive a manually selected severity.
+`NumericSeverity` calculates it from observable event facts:
+
+- Successful login: `1`.
+- Failed login: `2 + recent failure count`, capped at `4`.
+- Network event: base `1`, plus `1` for TCP and `2` for risky ports `22` or
+  `3389`, capped at `5`.
+- The pattern detector escalates 3-5 repeated failures to `4` (HIGH) and 6+
+  failures to `5` (CRITICAL).
+
+The deliberately invalid severity `9` exists only in the validation-error
+scenario to demonstrate the custom exception hierarchy.
+
 ## How type conversion and exceptions are connected
 
 They are no longer stand-alone demonstrations at the end of `main()`:
@@ -78,8 +95,8 @@ They are no longer stand-alone demonstrations at the end of `main()`:
   construction. Invalid input throws a custom `SecurityException` subtype.
 - An RAII validation guard performs cleanup on both the normal and exception
   paths (the C++ equivalent of `finally`).
-- `NumericSeverity` converts a real event severity from `int` to a class and
-  back to `int`.
+- `NumericSeverity` calculates severity from event facts and still demonstrates
+  conversion between an `int` and a class.
 - `SecurityEventSummary` converts a real `SecurityEvent` into a compact summary.
 - `printMetric<T>()` prints report metrics of several types.
 

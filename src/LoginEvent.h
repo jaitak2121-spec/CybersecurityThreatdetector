@@ -33,9 +33,9 @@ public:
         string id,
         string time,
         string ip,
-        int sev,
         string user,
-        bool success
+        bool success,
+        int recentFailures
     );
 
     // Overrides SecurityEvent::displayEvent()

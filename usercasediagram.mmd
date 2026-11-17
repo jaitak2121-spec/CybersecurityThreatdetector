@@ -4,22 +4,17 @@ flowchart LR
     subgraph SYSTEM["Cybersecurity Threat Detection Simulator"]
         SELECT(("Select scenario"))
         RUN(("Run simulation"))
-        VALIDATE(("Validate events"))
-        MONITOR(("Process events with threads"))
-        DETECT(("Detect threats and errors"))
-        RESPOND(("Simulate incident response"))
-        RESULTS(("View logs and report"))
-        COMPARE(("Compare run summaries"))
+        SCORE(("Calculate severity"))
+        ANALYZE(("Analyze events concurrently"))
+        RESPOND(("Detect and respond"))
+        VIEW(("View and compare report"))
 
         SELECT --> RUN
-        RUN -. "<<include>>" .-> VALIDATE
-        RUN -. "<<include>>" .-> MONITOR
-        MONITOR -. "<<include>>" .-> DETECT
-        DETECT -. "<<include>>" .-> RESPOND
-        RESPOND -. "<<include>>" .-> RESULTS
-        RESULTS -. "<<extend>> after another run" .-> COMPARE
+        RUN -. "<<include>>" .-> SCORE
+        RUN -. "<<include>>" .-> ANALYZE
+        ANALYZE -. "<<include>>" .-> RESPOND
+        RESPOND -. "<<include>>" .-> VIEW
     end
 
     USER --- SELECT
-    USER --- RESULTS
-    USER --- COMPARE
+    USER --- VIEW

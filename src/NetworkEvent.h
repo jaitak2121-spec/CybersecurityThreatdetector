@@ -32,7 +32,6 @@ public:
         string id,
         string time,
         string ip,
-        int sev,
         int port,
         string proto
     );

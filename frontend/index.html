@@ -245,7 +245,7 @@
       <div class="eyebrow">Live C++17 security simulation</div>
       <h1>🛡️ Cybersecurity Threat Detection &amp; Incident Response Simulator</h1>
       <p>A live view of the C++ OOP simulator — events → detection → threat → alert → incident → response → report.</p>
-      <div class="feature-pills"><span>5 scenarios</span><span>2 thread styles</span><span>Safe simulated actions</span><span>Public cloud demo</span></div>
+      <div class="feature-pills"><span>5 scenarios</span><span>Calculated severity</span><span>2 thread styles</span><span>Safe simulated actions</span></div>
     </div>
     <span class="badge offline" id="serviceBadge"><span class="dot"></span><span id="serviceText">CHECKING SERVICE</span></span>
   </header>
@@ -342,7 +342,7 @@
           <tr><td>this pointer</td><td>LoginEvent constructor and <code>Threat::updateStatus()</code></td></tr>
           <tr><td>Pointer to objects / derived</td><td><code>SecurityEvent*</code> and <code>dynamic_cast&lt;LoginEvent*&gt;</code> — section 5</td></tr>
           <tr><td>Object slicing</td><td>Base copy compared with virtual <code>clone()</code> — section 5</td></tr>
-          <tr><td>Type conversion</td><td><code>NumericSeverity</code> and <code>SecurityEventSummary</code> use real event data — section 1</td></tr>
+          <tr><td>Severity calculation + type conversion</td><td><code>NumericSeverity::forLogin()</code> and <code>forNetwork()</code> derive scores from real event facts — section 1</td></tr>
           <tr><td>Custom exceptions + RAII</td><td>Invalid severity is rejected during event construction — section 1</td></tr>
           <tr><td>Creating threads</td><td><code>EventMonitoringThread</code> and a <code>Thread</code> wrapping <code>EventMonitoringTask</code> — section 2</td></tr>
           <tr><td>Extending Thread / Runnable</td><td>One worker inherits <code>Thread</code>; the other implements <code>Runnable</code></td></tr>

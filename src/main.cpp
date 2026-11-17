@@ -63,6 +63,9 @@ int main(int argc, char* argv[])
 
     printSection("1. Collect and validate events");
     authServer.displayDevice();
+    cout << "Severity scoring is automatic: successful login=1; "
+         << "failed login=2+repeat count (max 4); "
+         << "network=1+TCP risk+risky-port risk.\n";
 
     // unique_ptr owns each object; raw base pointers provide a simple
     // polymorphic view for rules and detectors.
@@ -87,13 +90,13 @@ int main(int argc, char* argv[])
         addEvent(make_unique<LoginEvent>(
             "EVT-" + to_string(8801 + i),
             "2026-08-25 10:14:" + secondText,
-            "203.0.113.19", 4, "admin", false));
+            "203.0.113.19", "admin", false, i + 1));
     }
     addEvent(make_unique<LoginEvent>(
-        "EVT-8890", "2026-08-25 10:16:00", "198.51.100.7", 1,
-        "jsmith", true));
+        "EVT-8890", "2026-08-25 10:16:00", "198.51.100.7",
+        "jsmith", true, 0));
     addEvent(make_unique<NetworkEvent>(
-        "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19", 4,
+        "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19",
         22, "TCP"));
 
     // Exception handling is part of event admission, not a detached demo.
@@ -101,9 +104,9 @@ int main(int argc, char* argv[])
     {
         try
         {
-            addEvent(make_unique<LoginEvent>(
-                "EVT-BAD", "2026-08-25 10:16:05", "203.0.113.20", 9,
-                "invalid", false));
+            addEvent(make_unique<SecurityEvent>(
+                "EVT-BAD", "LOGIN_EVENT", "2026-08-25 10:16:05",
+                "203.0.113.20", 9));
         }
         catch (const ExceptionHandling::InvalidSeverityException& error)
         {

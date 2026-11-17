@@ -32,6 +32,7 @@ with tempfile.TemporaryDirectory() as directory:
         )
         assert result.returncode == 0, result.stderr
         assert f"Scenario: {scenario}" in result.stdout
+        assert "Severity scoring is automatic" in result.stdout
         assert "Simulation completed safely." in result.stdout
         outputs[scenario] = result.stdout
 
@@ -39,6 +40,10 @@ with tempfile.TemporaryDirectory() as directory:
     assert "Rejected invalid event" not in outputs["attack-only"]
     assert "UNKNOWN_ACTION" in outputs["response-failure"]
     assert "Synchronized events processed: 8" in outputs["high-volume"]
+    assert "Severity Score  : 3 (calculated)" in outputs["full-demo"]
+    assert "Severity Score  : 4 (calculated)" in outputs["full-demo"]
+    assert "Risk Level  : HIGH (4)" in outputs["full-demo"]
+    assert "Risk Level  : CRITICAL (5)" in outputs["high-volume"]
 
     invalid = subprocess.run(
         [binary, "not-allowed"], cwd=ROOT, capture_output=True, text=True
