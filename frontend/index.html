@@ -96,7 +96,7 @@
   .run-panel h2, .run-panel .hint, .run-panel .notice, .scenario-detail { grid-column: 1 / -1; }
   .controls { display: contents; }
   .scenario-picker { color: var(--muted); font-size: 13px; }
-  .scenario-picker select {
+  .scenario-fixed {
     display: block; margin-top: 4px; width: 100%; padding: 12px 14px;
     color: var(--text); background: var(--panel); border: 1px solid var(--border);
     border-radius: 9px; font: inherit;
@@ -267,7 +267,7 @@
       <div class="eyebrow">Live C++17 security simulation</div>
       <h1>🛡️ Cybersecurity Threat Detection &amp; Incident Response Simulator</h1>
       <p>A live view of the C++ OOP simulator — events → detection → threat → alert → incident → response → report.</p>
-      <div class="feature-pills"><span>5 scenarios</span><span>Calculated severity</span><span>2 thread styles</span><span>Safe simulated actions</span></div>
+      <div class="feature-pills"><span>Full demo + live portal</span><span>Calculated severity</span><span>2 thread styles</span><span>Safe simulated actions</span></div>
     </div>
     <span class="badge offline" id="serviceBadge"><span class="dot"></span><span id="serviceText">CHECKING SERVICE</span></span>
   </header>
@@ -275,7 +275,7 @@
   <section class="card">
     <h2>60-second demonstration</h2>
     <div class="demo-guide">
-      <div class="guide-item"><span class="guide-no">1</span><div><strong>Choose a scenario</strong><small>Use Full demo first, then compare it with High volume.</small></div></div>
+      <div class="guide-item"><span class="guide-no">1</span><div><strong>Simulate an event</strong><small>Try a login or network event, or run the complete Full Demo.</small></div></div>
       <div class="guide-item"><span class="guide-no">2</span><div><strong>Run the real program</strong><small>The hosted Python API executes the compiled C++ simulator.</small></div></div>
       <div class="guide-item"><span class="guide-no">3</span><div><strong>Explain the evidence</strong><small>Show the risk meter, metric changes, threads, exceptions, and report.</small></div></div>
     </div>
@@ -348,14 +348,12 @@
   <section class="card run-panel">
     <h2>Simulation control center</h2>
     <div class="controls">
-      <label class="scenario-picker">Scenario
-        <select id="scenarioSelect" aria-label="Simulation scenario">
-          <option value="full-demo">Loading scenarios…</option>
-        </select>
-      </label>
+      <div class="scenario-picker">Presentation scenario
+        <div class="scenario-fixed">Full demo (all concepts, data, and error paths)</div>
+      </div>
       <button class="run" id="runBtn" disabled>▶ Connecting…</button>
       <div class="scenario-detail" id="scenarioDescription"></div>
-      <span class="hint" id="hint">Choose a dataset or error path, then run the real C++ program.</span>
+      <span class="hint" id="hint">Submit a portal event or run the complete C++ demonstration.</span>
       <div class="notice" id="fileNotice" hidden></div>
     </div>
   </section>
@@ -374,7 +372,7 @@
     </div>
     <div class="risk-banner" id="riskBanner">
       <div class="risk-score" id="riskScore">–/5</div>
-      <div class="risk-label" id="riskLabel">Run a scenario to calculate risk</div>
+      <div class="risk-label" id="riskLabel">Run an event or Full Demo to calculate risk</div>
       <div class="risk-reason" id="riskReason">The score uses the highest threat severity found by the C++ report.</div>
       <div class="risk-meter" id="riskMeter" aria-label="Risk score out of five"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
@@ -463,7 +461,6 @@
   });
 
   const runBtn = document.getElementById("runBtn");
-  const scenarioSelect = document.getElementById("scenarioSelect");
   const hint = document.getElementById("hint");
   const output = document.getElementById("output");
   const serviceBadge = document.getElementById("serviceBadge");
@@ -475,33 +472,14 @@
   let lastSummaryText = "";
   const SCENARIO_LABELS = {
     "full-demo": "Full demo (all data and errors)",
-    "attack-only": "Attack data (successful response)",
-    "validation-errors": "Invalid event data",
-    "response-failure": "Failed response action",
-    "high-volume": "High-volume attack data",
     "portal-event": "Live portal event",
   };
   const SCENARIO_DESCRIPTIONS = {
     "full-demo": "Best presentation path: valid events, rejected input, both thread styles, detection rules, incident response, one failed action, and the final report.",
-    "attack-only": "Clean success path: attack activity is detected and every simulated response completes successfully.",
-    "validation-errors": "Exception path: invalid severity and missing identity are rejected safely before detection.",
-    "response-failure": "Failure path: an unsupported response action is recorded as FAILED while the remaining workflow continues.",
-    "high-volume": "Comparison path: more events and a stronger brute-force pattern produce different totals and a higher risk result.",
   };
 
   function showScenarioDescription() {
-    scenarioDescription.textContent = SCENARIO_DESCRIPTIONS[scenarioSelect.value] || "Select a scenario to inspect its workflow.";
-  }
-
-  function populateScenarios(scenarios) {
-    scenarioSelect.innerHTML = "";
-    Object.entries(scenarios).forEach(([value, label]) => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = label;
-      scenarioSelect.appendChild(option);
-    });
-    showScenarioDescription();
+    scenarioDescription.textContent = SCENARIO_DESCRIPTIONS["full-demo"];
   }
 
   function setServiceState(state, label) {
@@ -523,7 +501,7 @@
   }
 
   async function loadScenarios() {
-    populateScenarios(SCENARIO_LABELS);
+    showScenarioDescription();
     if (location.protocol === "file:") {
       serviceReady = false;
       runBtn.disabled = false;
@@ -542,12 +520,11 @@
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         setServiceState("running", attempt === 1 ? "CHECKING SERVICE" : `RETRYING ${attempt}/3`);
-        const scenarios = await fetchJson("/api/scenarios");
-        populateScenarios(scenarios);
+        await fetchJson("/api/scenarios");
         serviceReady = true;
         runBtn.disabled = false;
-        runBtn.textContent = "▶ Run Simulation";
-        hint.textContent = "Service ready. Choose a scenario and run the real C++ program.";
+        runBtn.textContent = "▶ Run Full Demo";
+        hint.textContent = "Service ready. Submit a portal event or run Full Demo.";
         setServiceState("", "SERVICE ONLINE");
         return;
       } catch (error) {
@@ -565,7 +542,6 @@
   }
 
   loadScenarios();
-  scenarioSelect.addEventListener("change", showScenarioDescription);
 
   const portalForm = document.getElementById("portalForm");
   const portalSubmit = document.getElementById("portalSubmit");
@@ -749,6 +725,7 @@
       high: Number(num(/^\s*HIGH\s*:\s*(\d+)/im, text)),
       medium: Number(num(/^\s*MEDIUM\s*:\s*(\d+)/im, text)),
       low: Number(num(/^\s*LOW \/ INFO\s*:\s*(\d+)/im, text)),
+      highest: Number(num(/Highest severity score\s*:\s*(\d+)/i, text)),
       validation: Number(num(/VALIDATION\s*:\s*(\d+)/i, text)),
       failures: count(/\(RESPONSE\).*-> FAILED/g, text),
       completed: count(/\(RESPONSE\).*-> COMPLETED/g, text),
@@ -776,7 +753,7 @@
       deltaNode.textContent = delta === 0 ? "no change" : `${delta > 0 ? "+" : ""}${delta} vs previous`;
       deltaNode.className = `d ${delta > 0 ? "up" : delta < 0 ? "down" : ""}`;
     });
-    const risk = summary.critical > 0 ? 5 : summary.high > 0 ? 4 : summary.medium > 0 ? 3 : summary.threats > 0 ? 1 : 0;
+    const risk = summary.highest;
     const riskNames = ["NO RISK", "INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"];
     const assessment = text.match(/System status:\s*([^\n]+)/i);
     const riskScore = document.getElementById("riskScore");
@@ -788,8 +765,8 @@
       : "Score = highest threat severity in this run.";
     document.querySelectorAll("#riskMeter span").forEach((bar, index) => bar.classList.toggle("on", index < risk));
     document.getElementById("comparisonText").textContent = previous
-      ? `Compared with: ${SCENARIO_LABELS[previous.scenario] || previous.scenario}. Run another scenario to see the summary change again.`
-      : "Baseline saved. Run a different scenario to see per-metric changes.";
+      ? `Compared with: ${SCENARIO_LABELS[previous.scenario] || previous.scenario}. Submit another event or run Full Demo to compare again.`
+      : "Baseline saved. Submit another event or run Full Demo to compare results.";
     const severities = { Critical: summary.critical, High: summary.high, Medium: summary.medium, Low: summary.low };
     Object.entries(severities).forEach(([name, value]) => {
       document.getElementById(`sev${name}`).textContent = value;
@@ -800,8 +777,8 @@
       `Critical ${summary.critical}, high ${summary.high}, medium ${summary.medium}, low or info ${summary.low}`
     );
     const findings = [
-      `Threading: two synchronized workers processed ${summary.events} events.`,
-      `Detection: ${summary.ruleMatches} rule matches; ${summary.threats} threat records reported.`,
+      `Threading: two synchronized workers processed ${summary.events} ${summary.events === 1 ? "event" : "events"}.`,
+      `Detection: ${summary.ruleMatches} rule ${summary.ruleMatches === 1 ? "match" : "matches"}; ${summary.threats} threat ${summary.threats === 1 ? "record" : "records"} reported.`,
       `Response: ${summary.completed} completed and ${summary.failures} failed simulated actions.`,
       `Validation: ${summary.validation} rejected inputs; alerts ${summary.alerts}; incidents ${summary.incidents}.`,
     ];
@@ -859,10 +836,9 @@
       await loadScenarios();
       return;
     }
-    const scenario = scenarioSelect.value;
-    const scenarioLabel = scenarioSelect.options[scenarioSelect.selectedIndex].text;
+    const scenario = "full-demo";
+    const scenarioLabel = SCENARIO_LABELS[scenario];
     runBtn.disabled = true;
-    scenarioSelect.disabled = true;
     setServiceState("running", "SIMULATION RUNNING");
     runBtn.innerHTML = '<span class="spinner"></span>Running…';
     hint.textContent = `Running: ${scenarioLabel}…`;
@@ -918,8 +894,7 @@
     } finally {
       clearTimeout(timer);
       runBtn.disabled = false;
-      scenarioSelect.disabled = !serviceReady;
-      runBtn.textContent = serviceReady ? "▶ Run Simulation" : "↻ Retry Connection";
+      runBtn.textContent = serviceReady ? "▶ Run Full Demo" : "↻ Retry Connection";
     }
   });
 </script>

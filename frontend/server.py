@@ -43,10 +43,6 @@ BINARY = os.path.join(PROJECT_ROOT, "simulator")
 INDEX_HTML = os.path.join(FRONTEND_DIR, "index.html")
 SCENARIOS = {
     "full-demo": "Full demo (all data and errors)",
-    "attack-only": "Attack data (successful response)",
-    "validation-errors": "Invalid event data",
-    "response-failure": "Failed response action",
-    "high-volume": "High-volume attack data",
 }
 RUN_SLOTS = threading.BoundedSemaphore(
     max(1, int(os.environ.get("MAX_CONCURRENT_RUNS", "2")))
@@ -285,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
-        result = run_simulator("attack-only", args)
+        result = run_simulator("portal-event", args)
         result["eventLabel"] = label
         self._send(result.get("status", 200), json.dumps(result), "application/json")
 

@@ -11,8 +11,8 @@ participant ThreatDetector as Detector
 participant Incident
 participant SecurityReport as Report
 
-User -> UI : select scenario or submit portal event
-alt predefined scenario
+User -> UI : run full demo or submit portal event
+alt full demonstration
   UI -> Server : GET /api/run?scenario=...
 else login or network portal event
   UI -> Server : POST /api/portal

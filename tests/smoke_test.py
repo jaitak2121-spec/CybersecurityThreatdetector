@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory() as directory:
 
     portal_login = subprocess.run(
         [
-            binary, "attack-only", "portal-login", "teacher-demo",
+            binary, "portal-event", "portal-login", "teacher-demo",
             "failed", "3", "203.0.113.50",
         ],
         cwd=ROOT,
@@ -61,12 +61,32 @@ with tempfile.TemporaryDirectory() as directory:
     )
     assert portal_login.returncode == 0, portal_login.stderr
     assert "Portal event accepted: incorrect login" in portal_login.stdout
-    assert "Synchronized events processed: 6" in portal_login.stdout
+    assert "Synchronized events processed: 1" in portal_login.stdout
     assert "Severity Score  : 4 (calculated)" in portal_login.stdout
+    assert "Threats detected        : 1" in portal_login.stdout
+    assert "Highest severity score  : 4" in portal_login.stdout
+
+    portal_success = subprocess.run(
+        [
+            binary, "portal-event", "portal-login", "teacher-demo",
+            "success", "0", "203.0.113.50",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert portal_success.returncode == 0, portal_success.stderr
+    assert "Severity Score  : 1 (calculated)" in portal_success.stdout
+    assert "Synchronized events processed: 1" in portal_success.stdout
+    assert "Threats detected        : 1" in portal_success.stdout
+    assert "  HIGH                  : 0" in portal_success.stdout
+    assert "Highest severity score  : 1" in portal_success.stdout
+    assert "Alerts raised           : 0" in portal_success.stdout
+    assert "Incidents created       : 0" in portal_success.stdout
 
     portal_network = subprocess.run(
         [
-            binary, "attack-only", "portal-network", "443", "UDP",
+            binary, "portal-event", "portal-network", "443", "UDP",
             "198.51.100.10",
         ],
         cwd=ROOT,
@@ -76,5 +96,6 @@ with tempfile.TemporaryDirectory() as directory:
     assert portal_network.returncode == 0, portal_network.stderr
     assert "Portal event accepted: UDP connection to port 443" in portal_network.stdout
     assert "Severity Score  : 1 (calculated)" in portal_network.stdout
+    assert "Highest severity score  : 1" in portal_network.stdout
 
 print("All public scenarios passed.")

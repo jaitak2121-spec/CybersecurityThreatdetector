@@ -34,9 +34,13 @@ void SecurityReport::generateSummary(
     displayReportHeader();
 
     // ---- Count threats by risk level using the nested class ----
-    int critical = 0, high = 0, medium = 0, low = 0;
+    int critical = 0, high = 0, medium = 0, low = 0, highestSeverity = 0;
     for (size_t i = 0; i < threats.size(); i++)
     {
+        if (threats[i].getSeverity() > highestSeverity)
+        {
+            highestSeverity = threats[i].getSeverity();
+        }
         string level = threats[i].getLevel().describe();
         if (level == "CRITICAL")     critical++;
         else if (level == "HIGH")    high++;
@@ -50,6 +54,7 @@ void SecurityReport::generateSummary(
     cout << "  HIGH                  : " << high << endl;
     cout << "  MEDIUM                : " << medium << endl;
     cout << "  LOW / INFO            : " << low << endl;
+    cout << "Highest severity score  : " << highestSeverity << endl;
 
     cout << "\n--- Alert Summary ---" << endl;
     cout << "Alerts raised           : " << alerts.size() << endl;

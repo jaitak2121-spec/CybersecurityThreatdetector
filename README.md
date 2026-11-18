@@ -23,9 +23,8 @@ compiles and runs the same C++ program; it does not reimplement the model.
 Do not open `frontend/index.html` directly with a `file://` URL: that only
 previews the layout and has no simulator API behind it.
 
-The web UI offers five safe, allow-listed runs: a full demonstration, attack
-data without deliberate errors, validation errors, a failed response action,
-and a higher-volume attack dataset.
+The public UI keeps one clear **Full Demo** containing all concepts, validation
+errors, thread behavior, detection, response outcomes, and the final report.
 It also includes a live event portal. A visitor can submit a simulated correct
 or incorrect login, or a TCP/UDP network event. The server validates the input,
 passes safe arguments to the real C++ executable, and refreshes the same risk

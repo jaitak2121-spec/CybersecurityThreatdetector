@@ -35,7 +35,8 @@ int main(int argc, char* argv[])
         || scenario == "attack-only"
         || scenario == "validation-errors"
         || scenario == "response-failure"
-        || scenario == "high-volume";
+        || scenario == "high-volume"
+        || scenario == "portal-event";
 
     if (!validScenario)
     {
@@ -92,22 +93,25 @@ int main(int argc, char* argv[])
         ownedEvents.push_back(std::move(event));
     };
 
-    for (int i = 0; i < failedLoginCount; ++i)
+    if (!hasPortalEvent)
     {
-        const int seconds = 2 + i * 8;
-        const string secondText =
-            (seconds < 10 ? "0" : "") + to_string(seconds);
+        for (int i = 0; i < failedLoginCount; ++i)
+        {
+            const int seconds = 2 + i * 8;
+            const string secondText =
+                (seconds < 10 ? "0" : "") + to_string(seconds);
+            addEvent(make_unique<LoginEvent>(
+                "EVT-" + to_string(8801 + i),
+                "2026-08-25 10:14:" + secondText,
+                "203.0.113.19", "admin", false, i + 1));
+        }
         addEvent(make_unique<LoginEvent>(
-            "EVT-" + to_string(8801 + i),
-            "2026-08-25 10:14:" + secondText,
-            "203.0.113.19", "admin", false, i + 1));
+            "EVT-8890", "2026-08-25 10:16:00", "198.51.100.7",
+            "jsmith", true, 0));
+        addEvent(make_unique<NetworkEvent>(
+            "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19",
+            22, "TCP"));
     }
-    addEvent(make_unique<LoginEvent>(
-        "EVT-8890", "2026-08-25 10:16:00", "198.51.100.7",
-        "jsmith", true, 0));
-    addEvent(make_unique<NetworkEvent>(
-        "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19",
-        22, "TCP"));
 
     if (portalEventType == "portal-login")
     {
@@ -262,31 +266,31 @@ int main(int argc, char* argv[])
         }
     }
 
-    Threat bruteForce = detector.detectThreat(
-        events, "203.0.113.19", 3); // overload 2: event collection
-    threats.push_back(bruteForce);
-    bruteForce.displayThreat();
+    Threat primaryThreat = threats.front();
+    Threat comparisonThreat = threats.front();
+    if (!hasPortalEvent)
+    {
+        primaryThreat = detector.detectThreat(
+            events, "203.0.113.19", 3); // overload 2: event collection
+        threats.push_back(primaryThreat);
 
-    Threat directDetection = detector.detectThreat(
-        "NETWORK_EVENT", 4, "203.0.113.20"); // overload 3: raw fields
-    threats.push_back(directDetection);
+        comparisonThreat = detector.detectThreat(
+            "NETWORK_EVENT", 4, "203.0.113.20"); // overload 3: raw fields
+        threats.push_back(comparisonThreat);
+    }
+    primaryThreat.displayThreat();
 
     printSection("4. Alert, investigate, and respond");
+    const bool createIncident =
+        !hasPortalEvent || primaryThreat.getStatus() == "ACTIVE";
     Alert alert(
-        "ALT-9042", "2026-08-25 10:16:40", bruteForce.getSeverity(),
-        "Repeated failed logins from " + bruteForce.getSourceIp()
+        "ALT-9042", "2026-08-25 10:16:40", primaryThreat.getSeverity(),
+        primaryThreat.getThreatType() + " from " + primaryThreat.getSourceIp()
     );
     Incident incident(
-        "INC-2026-0044", "Brute Force Attack on Auth Portal",
-        bruteForce.getSeverity(), "2026-08-25 10:17:00",
-        to_string(failedLoginCount)
-            + " failed logins from one external source."
-    );
-    alert.updateStatus("ESCALATED");
-    incident.addAlert(&alert);
-    securityLog.writeLogEntry(
-        "2026-08-25 10:16:40", "ALERT",
-        "Raised " + alert.getAlertId(), "AlertManager"
+        "INC-2026-0044", primaryThreat.getThreatType(),
+        primaryThreat.getSeverity(), "2026-08-25 10:17:00",
+        events.front()->getRawData()
     );
 
     Evidence authEvidence(
@@ -300,11 +304,20 @@ int main(int argc, char* argv[])
         "2026-08-25 10:18:10",
         "Inbound SSH attempts from 203.0.113.19"
     );
-    incident.addEvidence(&authEvidence);
-    incident.addEvidence(&networkEvidence);
+    if (createIncident)
+    {
+        alert.updateStatus("ESCALATED");
+        incident.addAlert(&alert);
+        incident.addEvidence(&authEvidence);
+        incident.addEvidence(&networkEvidence);
+        securityLog.writeLogEntry(
+            "2026-08-25 10:16:40", "ALERT",
+            "Raised " + alert.getAlertId(), "AlertManager"
+        );
+    }
 
     ResponseAction blockAction(
-        "ACT-1090", "BLOCK_SOURCE", bruteForce.getSourceIp());
+        "ACT-1090", "BLOCK_SOURCE", primaryThreat.getSourceIp());
     ResponseAction lockAction("ACT-1091", "LOCK_ACCOUNT", "admin");
     ResponseAction isolateAction(
         "ACT-1092", "ISOLATE_DEVICE", authServer.getDeviceId());
@@ -317,19 +330,22 @@ int main(int argc, char* argv[])
     {
         actions.push_back(&failedAction);
     }
-    for (ResponseAction* action : actions)
+    if (createIncident)
     {
-        incident.executeResponse(action, authServer);
         securityLog.writeLogEntry(
-            "2026-08-25 10:18:20", "RESPONSE",
-            action->getActionId() + " -> " + action->getStatus(),
-            "IncidentResponse"
+            "2026-08-25 10:17:00", "INCIDENT",
+            "Created " + incident.getIncidentId(), "IncidentManager"
         );
+        for (ResponseAction* action : actions)
+        {
+            incident.executeResponse(action, authServer);
+            securityLog.writeLogEntry(
+                "2026-08-25 10:18:20", "RESPONSE",
+                action->getActionId() + " -> " + action->getStatus(),
+                "IncidentResponse"
+            );
+        }
     }
-    securityLog.writeLogEntry(
-        "2026-08-25 10:17:00", "INCIDENT",
-        "Created " + incident.getIncidentId(), "IncidentManager"
-    );
 
     printSection("5. Compact OOP concept check");
 
@@ -341,18 +357,18 @@ int main(int argc, char* argv[])
          << (derivedPointer != nullptr ? "yes" : "no") << '\n';
 
     // Object slicing versus a virtual clone.
-    SecurityEvent sliced = *derivedPointer;
-    unique_ptr<SecurityEvent> cloned(derivedPointer->clone());
+    SecurityEvent sliced = *basePointer;
+    unique_ptr<SecurityEvent> cloned(basePointer->clone());
     cout << "Sliced object uses base display; clone keeps derived display:\n";
     sliced.displayEvent();
     cloned->displayEvent();
 
     // Friend/operator overloads, nested class, static functions, template.
-    cout << "Threat: " << bruteForce << '\n';
+    cout << "Threat: " << primaryThreat << '\n';
     cout << "Alert: " << alert << '\n';
     cout << "Higher than direct detection: "
-         << (bruteForce > directDetection ? "yes" : "no") << '\n';
-    Threat::ThreatLevel risk = bruteForce.getLevel();
+         << (primaryThreat > comparisonThreat ? "yes" : "no") << '\n';
+    Threat::ThreatLevel risk = primaryThreat.getLevel();
     cout << "Nested ThreatLevel: " << risk << '\n';
     TypeCasting::printMetric("Threat objects", Threat::getThreatCount());
     TypeCasting::printMetric("Alert objects", Alert::getAlertCount());
@@ -360,14 +376,22 @@ int main(int argc, char* argv[])
 
     // The hierarchy also demonstrates virtual inheritance, overriding,
     // virtual destructors and NetworkEvent's final specifier in the headers.
-    bruteForce.updateStatus("CONTAINED"); // uses this->status
+    primaryThreat.updateStatus("CONTAINED"); // uses this->status
 
     printSection("6. Log, incident, and report");
     securityLog.printAll();
-    incident.displayFullReport();
+    if (createIncident)
+    {
+        incident.displayFullReport();
+    }
 
-    vector<Alert*> alerts = {&alert};
-    vector<Incident*> incidents = {&incident};
+    vector<Alert*> alerts;
+    vector<Incident*> incidents;
+    if (createIncident)
+    {
+        alerts.push_back(&alert);
+        incidents.push_back(&incident);
+    }
     SecurityReport report(
         "REP-2026-08-25", "2026-08-25 23:00:00", "2026-08-25");
     report.generateSummary(threats, alerts, incidents, securityLog);
