@@ -35,7 +35,8 @@ public:
         string ip,
         string user,
         bool success,
-        int recentFailures
+        int recentFailures,
+        bool afterLock = false
     );
 
     // Overrides SecurityEvent::displayEvent()

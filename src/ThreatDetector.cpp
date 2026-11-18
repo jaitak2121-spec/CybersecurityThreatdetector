@@ -1,6 +1,7 @@
 #include "ThreatDetector.h"
 #include "LoginEvent.h"
 #include "NetworkEvent.h"
+#include "TypeCasting.h"
 #include <iostream>
 
 using namespace std;
@@ -143,16 +144,8 @@ Threat ThreatDetector::detectThreat(
         cout << "  " << failures << " failed logins detected - "
              << "brute-force pattern confirmed." << endl;
 
-        // Multiple failures escalate the severity to CRITICAL (5).
-        int sev = 5;
-        if (failures >= threshold * 2)
-        {
-            sev = 5;   // CRITICAL
-        }
-        else
-        {
-            sev = 4;   // HIGH
-        }
+        // Reuse login scoring: brute force is repeated failed login activity.
+        int sev = TypeCasting::NumericSeverity::forLogin(false, failures).getLevel();
 
         return Threat(
             "THREAT-" + to_string(threatCounter),

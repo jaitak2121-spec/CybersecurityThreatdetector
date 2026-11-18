@@ -81,11 +81,14 @@ Normal event constructors no longer receive a manually selected severity.
 `NumericSeverity` calculates it from observable event facts:
 
 - Successful login: `1`.
-- Failed login: `2 + recent failure count`, capped at `4`.
-- Network event: base `1`, plus `1` for TCP and `2` for risky ports `22` or
-  `3389`, capped at `5`.
-- The pattern detector escalates 3-5 repeated failures to `4` (HIGH) and 6+
-  failures to `5` (CRITICAL).
+- Login: `1 + failed + (failures >= 3) + (failures >= 5) + afterLock`.
+  Successful login always scores 1. The simulated lock starts at 5 failures.
+- Network: `1 + 2 * restrictedPort + (attempts >= 3) + unauthorized`.
+  Ports 22/3389 are restricted by the demo policy. TCP and UDP score equally.
+- Each condition is 1 if true, otherwise 0. Counts are supplied simulated
+  observations for the same source and user/port within 5 minutes; the portal
+  does not maintain a rolling traffic history. Unauthorized is an explicit
+  simulated policy decision. Brute-force detection reuses the login formula.
 
 The deliberately invalid severity `9` exists only in the validation-error
 scenario to demonstrate the custom exception hierarchy.

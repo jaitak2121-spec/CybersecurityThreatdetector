@@ -41,9 +41,10 @@ with tempfile.TemporaryDirectory() as directory:
     assert "UNKNOWN_ACTION" in outputs["response-failure"]
     assert "Synchronized events processed: 8" in outputs["high-volume"]
     assert "Severity Score  : 3 (calculated)" in outputs["full-demo"]
-    assert "Severity Score  : 4 (calculated)" in outputs["full-demo"]
-    assert "Risk Level  : HIGH (4)" in outputs["full-demo"]
-    assert "Risk Level  : CRITICAL (5)" in outputs["high-volume"]
+    assert "Severity Score  : 5 (calculated)" in outputs["full-demo"]
+    assert "Risk Level  : MEDIUM (3)" in outputs["full-demo"]
+    assert "Highest severity score  : 5" in outputs["full-demo"]
+    assert "Risk Level  : HIGH (4)" in outputs["high-volume"]
 
     invalid = subprocess.run(
         [binary, "not-allowed"], cwd=ROOT, capture_output=True, text=True
@@ -62,9 +63,9 @@ with tempfile.TemporaryDirectory() as directory:
     assert portal_login.returncode == 0, portal_login.stderr
     assert "Portal event accepted: incorrect login" in portal_login.stdout
     assert "Synchronized events processed: 1" in portal_login.stdout
-    assert "Severity Score  : 4 (calculated)" in portal_login.stdout
+    assert "Severity Score  : 3 (calculated)" in portal_login.stdout
     assert "Threats detected        : 1" in portal_login.stdout
-    assert "Highest severity score  : 4" in portal_login.stdout
+    assert "Highest severity score  : 3" in portal_login.stdout
 
     portal_success = subprocess.run(
         [
@@ -97,5 +98,23 @@ with tempfile.TemporaryDirectory() as directory:
     assert "Portal event accepted: UDP connection to port 443" in portal_network.stdout
     assert "Severity Score  : 1 (calculated)" in portal_network.stdout
     assert "Highest severity score  : 1" in portal_network.stdout
+
+    # All login thresholds and network flag combinations; protocols must score equally.
+    for failures, locked, expected in [(1,0,2),(2,0,2),(3,0,3),(4,0,3),(5,0,4),(10,0,4),(5,1,5)]:
+        result = subprocess.run(
+            [binary, "portal-event", "portal-login", "admin", "failed", str(failures), "203.0.113.50", str(locked)],
+            capture_output=True, text=True, check=True,
+        )
+        assert f"Highest severity score  : {expected}" in result.stdout
+    for port in (22, 3389, 443):
+        for attempts in (1, 3):
+            for unauthorized in (0, 1):
+                expected = 1 + 2 * (port in (22,3389)) + (attempts >= 3) + unauthorized
+                for protocol in ("TCP", "UDP"):
+                    result = subprocess.run(
+                        [binary, "portal-event", "portal-network", str(port), protocol, "203.0.113.50", str(attempts), str(unauthorized)],
+                        capture_output=True, text=True, check=True,
+                    )
+                    assert f"Highest severity score  : {expected}" in result.stdout
 
 print("All public scenarios passed.")

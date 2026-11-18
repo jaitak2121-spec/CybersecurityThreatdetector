@@ -317,9 +317,11 @@
           </div>
         </fieldset>
         <div class="field">
-          <label for="failedAttempts">Recent failed attempts</label>
+          <label for="failedAttempts">Failed attempts in simulated last 5 minutes</label>
           <input id="failedAttempts" name="failedAttempts" type="number" min="1" max="10" value="3" required inputmode="numeric" />
         </div>
+        <fieldset><legend>Account lock</legend><div class="radio-row"><label><input type="checkbox" name="afterLock" /> Attempt continued after account lock (requires 5+ failures)</label></div></fieldset>
+        <p class="portal-help">Login score = 1 + failed login + 3+ failures + 5+ failures + attempt after lock. Each true condition adds 1. Successful login = 1. Counts describe the same username and source IP in a simulated 5-minute window.</p>
       </div>
 
       <div id="networkFields" class="portal-fields" hidden>
@@ -334,7 +336,9 @@
             <label><input type="radio" name="protocol" value="UDP" disabled /> UDP</label>
           </div>
         </fieldset>
-        <p class="portal-help"><strong>Network guide:</strong> TCP is reliable and connection-based; UDP is faster and connectionless. Ports <strong>22 (SSH)</strong> and <strong>3389 (RDP)</strong> are risky in this simulation. Ports 80 (HTTP) and 443 (HTTPS) are normal examples.</p>
+        <div class="field"><label for="networkAttempts">Connections in simulated last 5 minutes</label><input id="networkAttempts" name="attempts" type="number" min="1" max="100" value="1" required disabled /></div>
+        <fieldset><legend>Simulated access policy</legend><div class="radio-row"><label><input type="checkbox" name="unauthorized" disabled /> Source is not permitted to access this service</label></div></fieldset>
+        <p class="portal-help">Network score = 1 + 2 × restricted port + repeated attempts + unauthorized access. Ports 22 (SSH) and 3389 (RDP) are restricted by this demo policy. Repeated = 3+ connections from the same IP to the same port in a simulated 5-minute window. TCP and UDP score equally.</p>
       </div>
 
       <div class="portal-actions">
@@ -559,6 +563,8 @@
       const failed = portalForm.elements.loginResult.value === "failed";
       portalForm.elements.failedAttempts.disabled = !failed;
       portalForm.elements.failedAttempts.required = failed;
+      portalForm.elements.afterLock.disabled = !failed;
+      if (!failed) portalForm.elements.afterLock.checked = false;
     }
   }
   portalForm.addEventListener("change", (event) => {
@@ -570,6 +576,8 @@
       const attempts = document.getElementById("failedAttempts");
       attempts.disabled = event.target.value === "success";
       attempts.required = event.target.value !== "success";
+      portalForm.elements.afterLock.disabled = event.target.value === "success";
+      if (event.target.value === "success") portalForm.elements.afterLock.checked = false;
     }
   });
 
@@ -586,9 +594,12 @@
       payload.username = values.get("username");
       payload.result = values.get("loginResult");
       payload.failedAttempts = payload.result === "failed" ? Number(values.get("failedAttempts")) : 0;
+      payload.afterLock = values.has("afterLock");
     } else {
       payload.port = Number(values.get("port"));
       payload.protocol = values.get("protocol");
+      payload.attempts = Number(values.get("attempts"));
+      payload.unauthorized = values.has("unauthorized");
     }
 
     portalSubmit.disabled = true;

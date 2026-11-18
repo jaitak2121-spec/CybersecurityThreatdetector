@@ -33,7 +33,9 @@ public:
         string time,
         string ip,
         int port,
-        string proto
+        string proto,
+        int attempts = 1,
+        bool unauthorized = false
     );
 
     void displayEvent() const override;

@@ -75,8 +75,8 @@ int main(int argc, char* argv[])
     printSection("1. Collect and validate events");
     authServer.displayDevice();
     cout << "Severity scoring is automatic: successful login=1; "
-         << "failed login=2+repeat count (max 4); "
-         << "network=1+TCP risk+risky-port risk.\n";
+         << "login=1+failed+3-failures+5-failures+after-lock; "
+         << "network=1+2*restricted-port+repeated+unauthorized.\n";
 
     // unique_ptr owns each object; raw base pointers provide a simple
     // polymorphic view for rules and detectors.
@@ -110,12 +110,12 @@ int main(int argc, char* argv[])
             "jsmith", true, 0));
         addEvent(make_unique<NetworkEvent>(
             "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19",
-            22, "TCP"));
+            22, "TCP", 3, true));
     }
 
     if (portalEventType == "portal-login")
     {
-        if (argc != 7)
+        if (argc != 7 && argc != 8)
         {
             cerr << "Portal login requires username, result, failure count, and source IP.\n";
             return 2;
@@ -124,21 +124,23 @@ int main(int argc, char* argv[])
         const int recentFailures = stoi(argv[5]);
         addEvent(make_unique<LoginEvent>(
             "EVT-PORTAL", "2026-11-18 08:30:00", argv[6],
-            argv[3], successful, successful ? 0 : recentFailures));
+            argv[3], successful, successful ? 0 : recentFailures,
+            argc == 8 && string(argv[7]) == "1"));
         cout << "Portal event accepted: "
              << (successful ? "successful" : "incorrect")
              << " login for " << argv[3] << ".\n";
     }
     else if (portalEventType == "portal-network")
     {
-        if (argc != 6)
+        if (argc != 6 && argc != 8)
         {
             cerr << "Portal network event requires port, protocol, and source IP.\n";
             return 2;
         }
         addEvent(make_unique<NetworkEvent>(
             "EVT-PORTAL", "2026-11-18 08:30:00", argv[5],
-            stoi(argv[3]), argv[4]));
+            stoi(argv[3]), argv[4], argc == 8 ? stoi(argv[6]) : 1,
+            argc == 8 && string(argv[7]) == "1"));
         cout << "Portal event accepted: " << argv[4]
              << " connection to port " << argv[3] << ".\n";
     }

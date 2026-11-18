@@ -8,24 +8,26 @@ object "authServer : Device" as device {
 }
 object "login1 : LoginEvent" as login1 {
   failedAttempts = 1
-  calculatedSeverity = 3
+  calculatedSeverity = 2
 }
 object "login2 : LoginEvent" as login2 {
   failedAttempts = 2
-  calculatedSeverity = 4
+  calculatedSeverity = 2
 }
 object "login3 : LoginEvent" as login3 {
   failedAttempts = 3
-  calculatedSeverity = 4
+  calculatedSeverity = 3
 }
 object "sshEvent : NetworkEvent" as network {
   port = 22
   protocol = TCP
-  calculatedSeverity = 4
+  attempts = 3
+  unauthorized = true
+  calculatedSeverity = 5
 }
 object "detector : ThreatDetector" as detector
 object "bruteForce : Threat" as threat {
-  severity = 4
+  severity = 3
   status = CONTAINED
 }
 object "incident : Incident" as incident {

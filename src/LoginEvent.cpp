@@ -10,7 +10,8 @@ LoginEvent::LoginEvent(
     string ip,
     string user,
     bool success,
-    int recentFailures
+    int recentFailures,
+    bool afterLock
 )
     // Virtual base EventInfo is listed first because it is always
     // constructed first; SecurityEvent then forwards the same ip.
@@ -21,7 +22,7 @@ LoginEvent::LoginEvent(
           time,
           ip,
           TypeCasting::NumericSeverity::forLogin(
-              success, recentFailures).getLevel()
+              success, recentFailures, afterLock).getLevel()
       )
 {
     // --------------------------------------------------------
@@ -35,7 +36,9 @@ LoginEvent::LoginEvent(
 
     // Build a short simulated raw description for the report/log.
     rawData = "Login attempt for user '" + user + "' from " + sourceIp
-              + (success ? " (SUCCESS)" : " (FAILED)");
+              + (success ? " (SUCCESS)" : " (FAILED)")
+              + "; failures in simulated 5-minute window=" + to_string(recentFailures)
+              + "; after lock=" + (afterLock ? "yes" : "no");
 }
 
 void LoginEvent::displayEvent() const

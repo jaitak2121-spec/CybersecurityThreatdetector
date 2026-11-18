@@ -9,7 +9,9 @@ NetworkEvent::NetworkEvent(
     string time,
     string ip,
     int port,
-    string proto
+    string proto,
+    int attempts,
+    bool unauthorized
 )
     // Virtual base EventInfo is listed first because it is always
     // constructed first; SecurityEvent then forwards the same ip.
@@ -19,14 +21,16 @@ NetworkEvent::NetworkEvent(
           "NETWORK_EVENT",
           time,
           ip,
-          TypeCasting::NumericSeverity::forNetwork(port, proto).getLevel()
+          TypeCasting::NumericSeverity::forNetwork(port, attempts, unauthorized).getLevel()
       )
 {
     destinationPort = port;
     protocol = proto;
 
     rawData = "Network connection to port " + to_string(port)
-              + " using " + proto;
+              + " using " + proto
+              + "; attempts in simulated 5-minute window=" + to_string(attempts)
+              + "; unauthorized=" + (unauthorized ? "yes" : "no");
 }
 
 void NetworkEvent::displayEvent() const

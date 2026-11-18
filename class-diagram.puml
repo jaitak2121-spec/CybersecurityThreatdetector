@@ -25,8 +25,8 @@ package "Events" {
   }
   class NumericSeverity {
     - level: int
-    {static} + forLogin(success, failures): NumericSeverity
-    {static} + forNetwork(port, protocol): NumericSeverity
+    {static} + forLogin(success, failures, afterLock): NumericSeverity
+    {static} + forNetwork(port, attempts, unauthorized): NumericSeverity
   }
 }
 
@@ -107,9 +107,9 @@ end note
 note bottom of NumericSeverity
   Login score:
   success = 1
-  failure = 2 + repeat count (max 4)
+  failure = 1 + L + R + B + C
 
   Network score:
-  1 + TCP risk + risky-port risk
+  1 + 2*restricted + repeated + unauthorized
 end note
 @enduml

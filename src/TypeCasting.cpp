@@ -3,7 +3,6 @@
 #include "ExceptionHandling.h"
 #include "SecurityEvent.h"
 
-#include <algorithm>
 
 namespace TypeCasting {
 
@@ -17,25 +16,24 @@ NumericSeverity::NumericSeverity(int value) : level(value) {
 
 NumericSeverity NumericSeverity::forLogin(
     bool loginSuccessful,
-    int recentFailures
+    int recentFailures,
+    bool afterLock
 ) {
     if (loginSuccessful) {
         return NumericSeverity(1);
     }
 
-    // Failed login: base 2 + repetition (1..2), capped at HIGH.
-    // The collection-level brute-force detector may later escalate to CRITICAL.
-    return NumericSeverity(std::min(4, 2 + std::max(1, recentFailures)));
+    return NumericSeverity(1 + 1 + (recentFailures >= 3)
+                           + (recentFailures >= 5) + afterLock);
 }
 
 NumericSeverity NumericSeverity::forNetwork(
     int destinationPort,
-    const std::string& protocol
+    int attempts,
+    bool unauthorized
 ) {
-    int score = 1;
-    if (protocol == "TCP") score += 1;
-    if (destinationPort == 22 || destinationPort == 3389) score += 2;
-    return NumericSeverity(std::min(5, score));
+    const bool restricted = destinationPort == 22 || destinationPort == 3389;
+    return NumericSeverity(1 + 2 * restricted + (attempts >= 3) + unauthorized);
 }
 
 int NumericSeverity::getLevel() const {

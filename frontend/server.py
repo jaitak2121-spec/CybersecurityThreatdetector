@@ -252,24 +252,35 @@ class Handler(BaseHTTPRequestHandler):
                 username = str(data.get("username", "")).strip()
                 result = data.get("result")
                 failures = int(data.get("failedAttempts", 0))
+                after_lock = data.get("afterLock", False)
+                if type(after_lock) is not bool:
+                    raise ValueError("After-lock flag must be true or false.")
                 if not username or len(username) > 32 or not all(
                     char.isalnum() or char in "._-" for char in username
                 ):
                     raise ValueError("Username may use letters, numbers, dot, underscore, or hyphen.")
                 if result not in ("success", "failed"):
                     raise ValueError("Login result must be success or failed.")
-                if not 0 <= failures <= 10:
-                    raise ValueError("Failed attempts must be between 0 and 10.")
-                args = ["portal-login", username, result, str(failures), source_ip]
+                if not (0 if result == "success" else 1) <= failures <= 10:
+                    raise ValueError("A failed login requires 1–10 attempts.")
+                if result == "success" and after_lock:
+                    raise ValueError("A successful login cannot be an attempt after account lock.")
+                if after_lock and failures < 5:
+                    raise ValueError("The simulated account locks after 5 failures.")
+                args = ["portal-login", username, result, str(failures), source_ip, str(int(after_lock))]
                 label = f"{'Successful' if result == 'success' else 'Incorrect'} login: {username}"
             elif event_type == "network":
                 port = int(data.get("port", 0))
                 protocol = str(data.get("protocol", "")).upper()
+                attempts = int(data.get("attempts", 1))
+                unauthorized = data.get("unauthorized", False)
+                if not 1 <= attempts <= 100 or type(unauthorized) is not bool:
+                    raise ValueError("Use 1–100 network attempts and a boolean unauthorized flag.")
                 if not 1 <= port <= 65535:
                     raise ValueError("Port must be between 1 and 65535.")
                 if protocol not in ("TCP", "UDP"):
                     raise ValueError("Protocol must be TCP or UDP.")
-                args = ["portal-network", str(port), protocol, source_ip]
+                args = ["portal-network", str(port), protocol, source_ip, str(attempts), str(int(unauthorized))]
                 label = f"{protocol} network event: port {port}"
             else:
                 raise ValueError("Event type must be login or network.")

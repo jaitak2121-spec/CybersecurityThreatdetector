@@ -14,10 +14,11 @@ private:
 
 public:
     NumericSeverity(int value);
-    static NumericSeverity forLogin(bool loginSuccessful, int recentFailures);
+    static NumericSeverity forLogin(bool loginSuccessful, int recentFailures, bool afterLock = false);
     static NumericSeverity forNetwork(
         int destinationPort,
-        const std::string& protocol
+        int attempts = 1,
+        bool unauthorized = false
     );
     int getLevel() const;
     operator int() const;
