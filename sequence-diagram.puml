@@ -11,9 +11,14 @@ participant ThreatDetector as Detector
 participant Incident
 participant SecurityReport as Report
 
-User -> UI : select scenario and run
-UI -> Server : GET /api/run?scenario=...
-Server -> Simulator : execute allow-listed scenario
+User -> UI : select scenario or submit portal event
+alt predefined scenario
+  UI -> Server : GET /api/run?scenario=...
+else login or network portal event
+  UI -> Server : POST /api/portal
+  Server -> Server : validate event fields
+end
+Server -> Simulator : execute safe argument list
 
 Simulator -> Scoring : calculate event severity
 Scoring --> Simulator : score 1..5

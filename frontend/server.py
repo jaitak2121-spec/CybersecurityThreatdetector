@@ -23,6 +23,7 @@ safe simulation.
 """
 
 import glob
+import ipaddress
 import json
 import os
 import subprocess
@@ -101,7 +102,7 @@ def build():
     return proc.returncode == 0, log.strip()
 
 
-def run_simulator(scenario):
+def run_simulator(scenario, extra_args=None):
     """
     Run the compiled simulator and capture its console output.
     Returns a dict ready to be sent back as JSON.
@@ -133,7 +134,7 @@ def run_simulator(scenario):
         try:
             started_at = time.monotonic()
             proc = subprocess.run(
-                [BINARY, scenario],
+                [BINARY, scenario, *(extra_args or [])],
                 cwd=PROJECT_ROOT,
                 capture_output=True,
                 text=True,
@@ -234,6 +235,59 @@ class Handler(BaseHTTPRequestHandler):
         # Anything else is rejected. (Other HTTP methods such as POST/PUT
         # are not implemented, so they return 501 automatically.)
         self._send(404, "Not found", "text/plain")
+
+    def do_POST(self):
+        request = urlparse(self.path)
+        if request.path != "/api/portal":
+            self._send(404, "Not found", "text/plain")
+            return
+
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length < 2 or length > 4096:
+                raise ValueError("Request size is invalid.")
+            data = json.loads(self.rfile.read(length))
+            if not isinstance(data, dict):
+                raise ValueError("Request body must be a JSON object.")
+            event_type = data.get("eventType")
+            source_ip = str(ipaddress.ip_address(data.get("sourceIp", "")))
+
+            if event_type == "login":
+                username = str(data.get("username", "")).strip()
+                result = data.get("result")
+                failures = int(data.get("failedAttempts", 0))
+                if not username or len(username) > 32 or not all(
+                    char.isalnum() or char in "._-" for char in username
+                ):
+                    raise ValueError("Username may use letters, numbers, dot, underscore, or hyphen.")
+                if result not in ("success", "failed"):
+                    raise ValueError("Login result must be success or failed.")
+                if not 0 <= failures <= 10:
+                    raise ValueError("Failed attempts must be between 0 and 10.")
+                args = ["portal-login", username, result, str(failures), source_ip]
+                label = f"{'Successful' if result == 'success' else 'Incorrect'} login: {username}"
+            elif event_type == "network":
+                port = int(data.get("port", 0))
+                protocol = str(data.get("protocol", "")).upper()
+                if not 1 <= port <= 65535:
+                    raise ValueError("Port must be between 1 and 65535.")
+                if protocol not in ("TCP", "UDP"):
+                    raise ValueError("Protocol must be TCP or UDP.")
+                args = ["portal-network", str(port), protocol, source_ip]
+                label = f"{protocol} network event: port {port}"
+            else:
+                raise ValueError("Event type must be login or network.")
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            self._send(
+                400,
+                json.dumps({"ok": False, "output": str(exc)}),
+                "application/json",
+            )
+            return
+
+        result = run_simulator("attack-only", args)
+        result["eventLabel"] = label
+        self._send(result.get("status", 200), json.dumps(result), "application/json")
 
 
 def main():

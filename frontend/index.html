@@ -123,6 +123,26 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Live event portal */
+  .portal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .portal-grid fieldset { grid-column: 1 / -1; margin: 0; padding: 0; border: 0; }
+  .portal-grid legend, .field label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 12px; font-weight: 650; }
+  .radio-row { display: flex; flex-wrap: wrap; gap: 9px; }
+  .radio-row label { min-height: 42px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border: 1px solid var(--border); border-radius: 9px; background: #0f1b34; cursor: pointer; }
+  .radio-row input { accent-color: var(--accent); }
+  .field input, .field select {
+    width: 100%; min-height: 46px; padding: 10px 12px; color: var(--text);
+    background: #0f1b34; border: 1px solid var(--border); border-radius: 9px;
+    font: inherit; font-size: max(1rem, 1em);
+  }
+  .field input:user-invalid { border-color: var(--fail); }
+  :where(button, input, select):focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .portal-fields { display: contents; }
+  .portal-fields[hidden] { display: none; }
+  .portal-help { grid-column: 1 / -1; margin: 0; padding: 11px 13px; border-left: 3px solid var(--accent-2); background: rgba(129,140,248,.07); color: #cbd5e1; font-size: 12px; }
+  .portal-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 13px; flex-wrap: wrap; }
+  .portal-status { color: var(--muted); font-size: 12.5px; }
+
   /* Stats */
   .stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
   .stat {
@@ -231,6 +251,8 @@
     .run-panel h2, .run-panel .hint, .run-panel .notice, .scenario-detail { grid-column: 1; }
     .stats { grid-template-columns: repeat(2, 1fr); }
     button.run { width: 100%; }
+    .portal-grid { grid-template-columns: 1fr; }
+    .portal-grid fieldset, .portal-help, .portal-actions { grid-column: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -263,6 +285,63 @@
   <section class="card">
     <h2>Incident-response pipeline</h2>
     <div class="pipeline" id="pipeline"></div>
+  </section>
+
+  <!-- Interactive portal -->
+  <section class="card">
+    <h2>Live event portal</h2>
+    <form id="portalForm" class="portal-grid" aria-labelledby="portalHeading">
+      <fieldset>
+        <legend id="portalHeading">Choose the event to simulate</legend>
+        <div class="radio-row">
+          <label><input type="radio" name="eventType" value="login" checked /> Login event</label>
+          <label><input type="radio" name="eventType" value="network" /> Network event</label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="portalIp">Source IP address</label>
+        <input id="portalIp" name="sourceIp" value="203.0.113.19" required maxlength="45" autocorrect="off" autocapitalize="none" spellcheck="false" />
+      </div>
+
+      <div id="loginFields" class="portal-fields">
+        <div class="field">
+          <label for="portalUsername">Username</label>
+          <input id="portalUsername" name="username" value="admin" required maxlength="32" pattern="[A-Za-z0-9._-]+" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" />
+        </div>
+        <fieldset>
+          <legend>Login result</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="loginResult" value="failed" checked /> Incorrect login</label>
+            <label><input type="radio" name="loginResult" value="success" /> Successful login</label>
+          </div>
+        </fieldset>
+        <div class="field">
+          <label for="failedAttempts">Recent failed attempts</label>
+          <input id="failedAttempts" name="failedAttempts" type="number" min="1" max="10" value="3" required inputmode="numeric" />
+        </div>
+      </div>
+
+      <div id="networkFields" class="portal-fields" hidden>
+        <div class="field">
+          <label for="portalPort">Destination port</label>
+          <input id="portalPort" name="port" type="number" min="1" max="65535" value="22" required disabled inputmode="numeric" />
+        </div>
+        <fieldset>
+          <legend>Protocol</legend>
+          <div class="radio-row">
+            <label><input type="radio" name="protocol" value="TCP" checked disabled /> TCP</label>
+            <label><input type="radio" name="protocol" value="UDP" disabled /> UDP</label>
+          </div>
+        </fieldset>
+        <p class="portal-help"><strong>Network guide:</strong> TCP is reliable and connection-based; UDP is faster and connectionless. Ports <strong>22 (SSH)</strong> and <strong>3389 (RDP)</strong> are risky in this simulation. Ports 80 (HTTP) and 443 (HTTPS) are normal examples.</p>
+      </div>
+
+      <div class="portal-actions">
+        <button class="run" id="portalSubmit" type="submit">Send Event to Detector</button>
+        <span class="portal-status" id="portalStatus" role="status" aria-live="polite">The real C++ simulator will calculate severity and update the report.</span>
+      </div>
+    </form>
   </section>
 
   <!-- Controls -->
@@ -400,6 +479,7 @@
     "validation-errors": "Invalid event data",
     "response-failure": "Failed response action",
     "high-volume": "High-volume attack data",
+    "portal-event": "Live portal event",
   };
   const SCENARIO_DESCRIPTIONS = {
     "full-demo": "Best presentation path: valid events, rejected input, both thread styles, detection rules, incident response, one failed action, and the final report.",
@@ -486,6 +566,89 @@
 
   loadScenarios();
   scenarioSelect.addEventListener("change", showScenarioDescription);
+
+  const portalForm = document.getElementById("portalForm");
+  const portalSubmit = document.getElementById("portalSubmit");
+  const portalStatus = document.getElementById("portalStatus");
+  const loginFields = document.getElementById("loginFields");
+  const networkFields = document.getElementById("networkFields");
+
+  function showPortalFields(eventType) {
+    const login = eventType === "login";
+    loginFields.hidden = !login;
+    networkFields.hidden = login;
+    loginFields.querySelectorAll("input").forEach((input) => { input.disabled = !login; });
+    networkFields.querySelectorAll("input").forEach((input) => { input.disabled = login; });
+    if (login) {
+      const failed = portalForm.elements.loginResult.value === "failed";
+      portalForm.elements.failedAttempts.disabled = !failed;
+      portalForm.elements.failedAttempts.required = failed;
+    }
+  }
+  portalForm.addEventListener("change", (event) => {
+    if (event.target.name === "eventType") {
+      showPortalFields(event.target.value);
+      portalStatus.textContent = "Choose event details, then send them to the real C++ detector.";
+    }
+    if (event.target.name === "loginResult") {
+      const attempts = document.getElementById("failedAttempts");
+      attempts.disabled = event.target.value === "success";
+      attempts.required = event.target.value !== "success";
+    }
+  });
+
+  portalForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!serviceReady) {
+      portalStatus.textContent = "The simulator service is not ready. Retry the connection below.";
+      return;
+    }
+    const values = new FormData(portalForm);
+    const eventType = values.get("eventType");
+    const payload = { eventType, sourceIp: values.get("sourceIp") };
+    if (eventType === "login") {
+      payload.username = values.get("username");
+      payload.result = values.get("loginResult");
+      payload.failedAttempts = payload.result === "failed" ? Number(values.get("failedAttempts")) : 0;
+    } else {
+      payload.port = Number(values.get("port"));
+      payload.protocol = values.get("protocol");
+    }
+
+    portalSubmit.disabled = true;
+    portalSubmit.innerHTML = '<span class="spinner"></span>Analyzing Event…';
+    portalStatus.textContent = "Sending the event through scoring, detection, logging, and reporting…";
+    resetPipeline();
+    const anim = animatePipeline();
+    try {
+      const response = await fetch("/api/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      await anim;
+      if (!response.ok || !data.ok) throw new Error(data.output || "Event simulation failed.");
+      renderOutput(data.output);
+      updateStats(data.output, "portal-event", data.durationMs);
+      const severity = data.output.match(/Event ID\s*:\s*EVT-PORTAL[\s\S]*?Severity Score\s*:\s*(\d+)/)?.[1] || "–";
+      const portalAnalysis = data.output.split("Analyzing security event EVT-PORTAL")[1]?.split("Analyzing security event")[0] || "";
+      const issue = /Rule triggered:/.test(portalAnalysis);
+      portalStatus.textContent = `${data.eventLabel} processed: severity ${severity}/5, ${issue ? "issue detected" : "normal activity"}. Report updated.`;
+      const portalFinding = document.createElement("li");
+      portalFinding.textContent = `Portal event: ${data.eventLabel}; severity ${severity}/5; ${issue ? "detection rule triggered" : "no rule triggered"}.`;
+      document.getElementById("keyFindings").prepend(portalFinding);
+      document.getElementById("statsCard").scrollIntoView({
+        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    } catch (error) {
+      portalStatus.textContent = `Event rejected: ${error.message}`;
+    } finally {
+      portalSubmit.disabled = false;
+      portalSubmit.textContent = "Send Event to Detector";
+    }
+  });
 
   function classifyLine(line) {
     const l = line.toLowerCase();

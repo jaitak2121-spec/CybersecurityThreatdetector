@@ -1,5 +1,17 @@
 # Use Cases
 
+## UC-P — Submit a live portal event
+
+**Actor:** Visitor or security analyst
+
+1. The visitor chooses a login or network event.
+2. The server validates the username, IP address, login result, port, and protocol.
+3. The real C++ simulator creates the appropriate event object and calculates severity.
+4. Detection rules analyze the event and the dashboard shows whether an issue was found.
+5. The event, threat, log entry, and updated totals appear in the security report.
+
+**Alternate:** Invalid portal data is rejected before the simulator is executed.
+
 ## UC-00 — Run a public simulation scenario
 
 **Actor:** Visitor or security analyst

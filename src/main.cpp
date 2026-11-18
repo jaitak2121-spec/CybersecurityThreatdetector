@@ -49,10 +49,20 @@ int main(int argc, char* argv[])
         scenario == "full-demo" || scenario == "response-failure";
     const int failedLoginCount = scenario == "high-volume" ? 6 : 3;
 
+    const bool hasPortalEvent = argc > 2;
+    const string portalEventType = hasPortalEvent ? argv[2] : "";
+    if (hasPortalEvent
+        && portalEventType != "portal-login"
+        && portalEventType != "portal-network")
+    {
+        cerr << "Unknown portal event type: " << portalEventType << '\n';
+        return 2;
+    }
+
     cout << "==============================================\n"
          << " \n"
          << "  Cybersecurity Threat Detection & Response Simulator\n"
-         << "  " << scenario << "\n"
+         << "  Scenario: " << scenario << "\n"
          << "==============================================\n";
 
     SecurityLog securityLog;
@@ -98,6 +108,36 @@ int main(int argc, char* argv[])
     addEvent(make_unique<NetworkEvent>(
         "EVT-8891", "2026-08-25 10:15:40", "203.0.113.19",
         22, "TCP"));
+
+    if (portalEventType == "portal-login")
+    {
+        if (argc != 7)
+        {
+            cerr << "Portal login requires username, result, failure count, and source IP.\n";
+            return 2;
+        }
+        const bool successful = string(argv[4]) == "success";
+        const int recentFailures = stoi(argv[5]);
+        addEvent(make_unique<LoginEvent>(
+            "EVT-PORTAL", "2026-11-18 08:30:00", argv[6],
+            argv[3], successful, successful ? 0 : recentFailures));
+        cout << "Portal event accepted: "
+             << (successful ? "successful" : "incorrect")
+             << " login for " << argv[3] << ".\n";
+    }
+    else if (portalEventType == "portal-network")
+    {
+        if (argc != 6)
+        {
+            cerr << "Portal network event requires port, protocol, and source IP.\n";
+            return 2;
+        }
+        addEvent(make_unique<NetworkEvent>(
+            "EVT-PORTAL", "2026-11-18 08:30:00", argv[5],
+            stoi(argv[3]), argv[4]));
+        cout << "Portal event accepted: " << argv[4]
+             << " connection to port " << argv[3] << ".\n";
+    }
 
     // Exception handling is part of event admission, not a detached demo.
     if (showValidationErrors)

@@ -26,6 +26,10 @@ previews the layout and has no simulator API behind it.
 The web UI offers five safe, allow-listed runs: a full demonstration, attack
 data without deliberate errors, validation errors, a failed response action,
 and a higher-volume attack dataset.
+It also includes a live event portal. A visitor can submit a simulated correct
+or incorrect login, or a TCP/UDP network event. The server validates the input,
+passes safe arguments to the real C++ executable, and refreshes the same risk
+summary, evidence output, log totals, and security report.
 After every successful run, the dashboard keeps the previous summary in the
 browser session and shows metric-by-metric changes for events, threats,
 critical threats, validation errors, failed actions, and log entries.

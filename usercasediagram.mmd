@@ -3,6 +3,7 @@ flowchart LR
 
     subgraph SYSTEM["Cybersecurity Threat Detection Simulator"]
         SELECT(("Select scenario"))
+        SUBMIT(("Submit login or network event"))
         RUN(("Run simulation"))
         SCORE(("Calculate severity"))
         ANALYZE(("Analyze events concurrently"))
@@ -10,6 +11,7 @@ flowchart LR
         VIEW(("View and compare report"))
 
         SELECT --> RUN
+        SUBMIT --> RUN
         RUN -. "<<include>>" .-> SCORE
         RUN -. "<<include>>" .-> ANALYZE
         ANALYZE -. "<<include>>" .-> RESPOND
@@ -17,4 +19,5 @@ flowchart LR
     end
 
     USER --- SELECT
+    USER --- SUBMIT
     USER --- VIEW
