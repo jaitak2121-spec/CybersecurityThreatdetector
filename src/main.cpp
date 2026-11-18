@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
     const int failedLoginCount = scenario == "high-volume" ? 6 : 3;
 
     cout << "==============================================\n"
-         << " Cybersecurity Threat Detection & Response\n"
-         << " (SAFE SIMULATION - no real actions performed)\n"
-         << " Scenario: " << scenario << "\n"
+         << " \n"
+         << "  Cybersecurity Threat Detection & Response Simulator\n"
+         << "  " << scenario << "\n"
          << "==============================================\n";
 
     SecurityLog securityLog;
